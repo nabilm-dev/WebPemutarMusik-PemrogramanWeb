@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Music Player</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/form.css">
+</head>
+
+<body>
+
+<nav>
+    <a href="../index.html">Home</a>
+    <a href="about.html">About</a>
+</nav>
+
+<header>
+    <h1>Register Web Music Player</h1>
+    <p>Silakan lengkapi data berikut untuk Masuk.</p>
+</header>
+
+<main>
+  <form action="#" method="post">
+
+    <fieldset>
+      <legend>Akun Pengguna</legend>
+
+      <p>
+        <label for="username">Nama Pengguna</label>
+        <input type="text" id="username" name="username"
+               required minlength="4" maxlength="20"
+               pattern="[A-Za-z0-9_]+"
+               title="Hanya huruf, angka, dan garis bawah"
+               placeholder="Contoh: budi_music">
+      </p>
+
+      <p>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email"
+               required placeholder="nama@contoh.com">
+      </p>
+
+      <p>
+        <label for="password">Kata Sandi</label>
+        <input type="password" id="password" name="password"
+               required minlength="8">
+      </p>
+
+      <p>
+        <label for="tanggal_lahir">Tanggal Lahir</label>
+        <input type="date" id="tanggal_lahir" name="tanggal_lahir"
+               required max="2026-12-31">
+      </p>
+    </fieldset>
+
+    <p>
+    <fieldset>
+    <legend>Berlangganan</legend>
+    <div class="option">
+        <input type="radio" id="free" name="langganan" value="Free" required>
+        <label for="free">Free</label>
+    </div>
+    <div class="option">
+        <input type="radio" id="standard" name="langganan" value="Standard">
+        <label for="standard">Standard</label>
+    </div>
+    <div class="option">
+        <input type="radio" id="premium" name="langganan" value="Premium">
+        <label for="premium">Premium</label>
+    </div>
+    </fieldset>    
+    </p>
+
+    <p class="option">
+      <input type="checkbox" id="setuju" name="setuju" required>
+      <label for="setuju">Saya menyetujui data yang saya isi.</label>
+    </p>
+
+    <p class="actions">
+      <button type="submit">Daftar</button>
+      <button type="reset" class="secondary">Reset</button>
+    </p>
+
+  </form>
+</main>
+
+<footer>
+    <p>&copy; 2026 - Pemrograman Web</p>
+</footer>
+
+<script>
+var HARGA = { free: 0, standard: 29000, premium: 49000, vip: 49000 };
+
+function hargaPaket(p) {
+    return HARGA[String(p).toLowerCase()];
+}
+
+function rupiah(n) {
+    return "Rp " + n.toLocaleString("id-ID");
+}
+
+/* ===== Submit form ===== */
+document.querySelector("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var form = this;
+    var paket = new FormData(form).get("langganan");
+
+    tampilBayar(paket, function () { kirim(form); });
+});
+
+/* ===== Kirim data ke API ===== */
+function kirim(form) {
+    var fd = new FormData(form);
+    var metode = fd.get("metode") || "POST";
+    var data = {};
+    fd.forEach(function (v, k) {
+        if (k !== "metode" && k !== "password") data[k] = v;
+    });
+
+    var url = "https://jsonplaceholder.typicode.com/posts";
+    var opsi = { method: metode };
+
+    if (metode === "POST") {
+        opsi.headers = { "Content-Type": "application/json" };
+        opsi.body = JSON.stringify(data);
+    } else {
+        url += "?" + new URLSearchParams(data).toString();
+    }
+
+    fetch(url, opsi)
+        .then(function (res) {
+            if (!res.ok) throw new Error("Status " + res.status);
+            return res.json();
+        })
+        .then(function () {
+            tampilNotif("Register berhasil", true);
+            form.reset();
+        })
+        .catch(function (err) {
+            console.error(err);
+            tampilNotif("Register gagal", false);
+        });
+}
+
+/* ===== Helper overlay & kotak di tengah ===== */
+function buatKotak(warna) {
+    var lama = document.getElementById("notif-overlay");
+    if (lama) lama.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "notif-overlay";
+    overlay.style.cssText =
+        "position:fixed;inset:0;z-index:9999;display:flex;" +
+        "align-items:center;justify-content:center;background:rgba(0,0,0,.65);";
+
+    var kotak = document.createElement("div");
+    kotak.style.cssText =
+        "background:#1e1e1e;color:#fff;text-align:center;padding:32px 40px;" +
+        "border-radius:16px;min-width:320px;max-width:90vw;" +
+        "border-top:6px solid " + warna + ";";
+
+    overlay.appendChild(kotak);
+    document.body.appendChild(overlay);
+    return { overlay: overlay, kotak: kotak };
+}
+
+/* ===== Kotak pembayaran / konfirmasi ===== */
+function tampilBayar(paket, lanjut) {
+    var hijau = "#1db954";
+
+    var harga = hargaPaket(paket);
+    if (harga === undefined) {
+        console.error("Paket tidak dikenal:", paket);
+        harga = 0;
+    }
+    var gratis = harga === 0;
+
+    var w = buatKotak(hijau);
+    var gaya = "padding:10px 28px;border-radius:999px;font-weight:700;" +
+               "font-size:1rem;cursor:pointer;";
+
+    var teksHarga = gratis
+        ? "Gratis"
+        : rupiah(harga) +
+          "<span style='font-size:.9rem;color:#b3b3b3;font-weight:400;'> / bulan</span>";
+
+    var pilihMetode = gratis ? "" :
+        "<select id='bayar-metode' style='width:100%;padding:10px 14px;" +
+            "background:#2a2a2a;color:#fff;border:1px solid #3a3a3a;" +
+            "border-radius:8px;font-size:1rem;color-scheme:dark;'>" +
+            "<option value=''>-- Pilih metode bayar --</option>" +
+            "<option>Transfer Bank</option>" +
+            "<option>E-Wallet</option>" +
+            "<option>Kartu Kredit</option>" +
+        "</select>";
+
+    w.kotak.innerHTML =
+        "<h2 style='margin:0 0 6px;color:" + hijau + ";'>" +
+            (gratis ? "Konfirmasi" : "Pembayaran") + "</h2>" +
+        "<p style='margin:0;color:#b3b3b3;'>Paket " + paket + "</p>" +
+        "<p style='margin:6px 0 18px;font-size:1.8rem;font-weight:700;'>" + teksHarga + "</p>" +
+        pilihMetode +
+        "<p id='bayar-err' style='color:#ff5252;font-size:.9rem;min-height:22px;margin:8px 0 12px;'></p>" +
+        "<div style='display:flex;gap:12px;justify-content:center;'>" +
+            "<button type='button' id='bayar-batal' style='" + gaya +
+                "background:transparent;color:#fff;border:1px solid #555;'>Batal</button>" +
+            "<button type='button' id='bayar-ok' style='" + gaya +
+                "background:" + hijau + ";color:#000;border:none;'>" +
+                (gratis ? "Konfirmasi" : "Bayar") + "</button>" +
+        "</div>";
+
+    function tutup() { w.overlay.remove(); }
+
+    document.getElementById("bayar-batal").addEventListener("click", tutup);
+
+    document.getElementById("bayar-ok").addEventListener("click", function () {
+        if (!gratis) {
+            var metode = document.getElementById("bayar-metode").value;
+            if (!metode) {
+                document.getElementById("bayar-err").textContent =
+                    "Pilih metode pembayaran dulu.";
+                return;
+            }
+        }
+
+        this.disabled = true;
+        this.textContent = "Memproses...";
+
+        setTimeout(function () {
+            tutup();
+            lanjut();
+        }, gratis ? 600 : 1500);
+    });
+}
+
+/* ===== Notif berhasil / gagal ===== */
+function tampilNotif(judul, sukses) {
+    var warna = sukses ? "#1db954" : "#ff5252";
+    var w = buatKotak(warna);
+
+    w.kotak.innerHTML =
+        "<div style='width:64px;height:64px;margin:0 auto 16px;border-radius:50%;" +
+        "background:" + warna + ";color:#000;font-size:36px;font-weight:700;" +
+        "line-height:64px;'>" + (sukses ? "&#10003;" : "&#10005;") + "</div>" +
+        "<h2 style='margin:0 0 22px;color:" + warna + ";'>" + judul + "</h2>" +
+        "<button type='button' id='notif-ok' style='padding:10px 32px;border:none;" +
+        "border-radius:999px;background:" + warna + ";color:#000;font-weight:700;" +
+        "cursor:pointer;'>OK</button>";
+
+    function tutup() { w.overlay.remove(); }
+    document.getElementById("notif-ok").addEventListener("click", tutup);
+    w.overlay.addEventListener("click", function (e) {
+        if (e.target === w.overlay) tutup();
+    });
+    setTimeout(tutup, 4000);
+}
+</script>
+
+</body>
+</html>

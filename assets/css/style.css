@@ -1,0 +1,202 @@
+/* ===== Reset & Variabel ===== */
+:root {
+    --black:       #000000;
+    --bg:          #121212;
+    --card:        #1e1e1e;
+    --item:        #2a2a2a;
+    --green:       #1db954;
+    --green-light: #1ed760;
+    --text:        #ffffff;
+    --text-muted:  #b3b3b3;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+/* ===== Navbar ===== */
+nav {
+    background-color: var(--black);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #282828;
+}
+
+nav a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+nav a:hover {
+    background-color: var(--green);
+    color: var(--black);
+}
+
+/* Tombol Login di kanan */
+nav .nav-login {
+    margin-left: auto;
+    background-color: var(--green);
+    color: var(--black);
+    font-weight: 700;
+    padding: 6px 22px;
+}
+
+nav .nav-login:hover {
+    background-color: var(--green-light);
+    color: var(--black);
+}
+
+/* ===== Header ===== */
+header {
+    background-color: var(--green);
+    color: var(--black);
+    text-align: center;
+    padding: 60px 20px;
+}
+
+header h1 {
+    font-size: 2.6rem;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+header p {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* ===== Main & Section ===== */
+main {
+    max-width: 800px;
+    margin: 32px auto;
+    padding: 0 20px;
+}
+
+main section {
+    background-color: var(--card);
+    padding: 24px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border-left: 6px solid var(--green);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+main section p {
+    margin-bottom: 10px;
+    color: var(--text-muted);
+}
+
+/* ===== Heading ===== */
+h2 {
+    color: var(--green-light);
+    margin-bottom: 10px;
+}
+
+h3 {
+    color: var(--text);
+    margin: 16px 0 8px;
+}
+
+/* ===== Konten di luar <main> ===== */
+body > h2,
+body > h3,
+body > p,
+body > ul {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 20px;
+}
+
+body > h2 {
+    margin-top: 32px;
+}
+
+body > p {
+    color: var(--text-muted);
+}
+
+/* ===== List ===== */
+ul {
+    list-style: none;
+}
+
+body > ul {
+    padding-left: 20px;
+}
+
+ul li {
+    background-color: var(--item);
+    margin: 8px 20px 8px 0;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border-left: 4px solid var(--green);
+    transition: transform 0.2s, background-color 0.2s, color 0.2s;
+}
+
+ul li:hover {
+    background-color: var(--green);
+    color: var(--black);
+    transform: translateX(6px);
+}
+
+/* ===== Link ===== */
+main a,
+body > p a {
+    color: var(--green-light);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 2px solid var(--green);
+    transition: color 0.2s;
+}
+
+main a:hover,
+body > p a:hover {
+    color: var(--text);
+}
+
+/* ===== Footer ===== */
+footer {
+    background-color: var(--black);
+    color: var(--text-muted);
+    text-align: center;
+    padding: 20px;
+    margin-top: 48px;
+    border-top: 1px solid #282828;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    nav {
+        padding: 12px 16px;
+        gap: 10px;
+    }
+}
+
+.main-login {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
