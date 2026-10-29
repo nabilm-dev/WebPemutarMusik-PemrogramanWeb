@@ -1,7 +1,54 @@
+
+/* =========================================
+   RAMPHONY - FORM STYLESHEET
+   ========================================= */
+
+:root {
+    --bg: #101010;
+    --card: #202020;
+    --item: #383838;
+
+    --green: #B5E4BF;
+    --green-light: #C9F0D1;
+
+    --text: #ffffff;
+    --muted: #aaaaaa;
+    --black: #071b12;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+/* ===== HEADER ===== */
+
 header {
     padding: 28px 20px;
     text-align: center;
 }
+
+header h1 {
+    color: var(--green);
+    letter-spacing: 2px;
+}
+
+header a {
+    color: var(--green);
+    text-decoration: none;
+}
+
+header a:hover {
+    color: var(--green-light);
+}
+
+/* ===== MAIN CONTENT ===== */
 
 main {
     width: 100%;
@@ -11,14 +58,18 @@ main {
     display: block;
 }
 
-/* ===== Form 1 kolom, di tengah ===== */
+/* ===== FORM 1 KOLOM ===== */
+
 form {
     width: 100%;
     margin: 0 auto;
+
     background-color: var(--card);
     padding: 28px 32px;
+
     border-radius: 12px;
     border-left: 6px solid var(--green);
+
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     color-scheme: dark;
 
@@ -33,9 +84,10 @@ form > p.actions {
     margin-bottom: 0;
 }
 
-/* ===== Fieldset ===== */
+/* ===== FIELDSET ===== */
+
 fieldset {
-    border: 1px solid #333;
+    border: 1px solid #383838;
     border-radius: 10px;
     padding: 16px 20px 6px;
     margin: 0;
@@ -43,7 +95,7 @@ fieldset {
 }
 
 legend {
-    color: var(--green-light);
+    color: var(--green);
     font-weight: 600;
     padding: 0 10px;
 }
@@ -52,7 +104,8 @@ form p {
     margin-bottom: 14px;
 }
 
-/* ===== Label & Input ===== */
+/* ===== LABEL & INPUT ===== */
+
 label {
     display: inline-block;
     margin-bottom: 5px;
@@ -68,13 +121,19 @@ select,
 textarea {
     width: 100%;
     padding: 10px 14px;
+
     background-color: var(--item);
     color: var(--text);
+
     border: 1px solid #3a3a3a;
     border-radius: 8px;
+
     font-family: inherit;
     font-size: 1rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
+
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
 }
 
 textarea {
@@ -82,7 +141,7 @@ textarea {
 }
 
 ::placeholder {
-    color: #777;
+    color: #999999;
 }
 
 input:focus,
@@ -90,10 +149,11 @@ select:focus,
 textarea:focus {
     outline: none;
     border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.25);
+    box-shadow: 0 0 0 3px rgba(181, 228, 191, 0.2);
 }
 
-/* ===== Radio & Checkbox ===== */
+/* ===== RADIO & CHECKBOX ===== */
+
 .option {
     display: flex;
     align-items: center;
@@ -114,9 +174,11 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 
-/* ===== Tombol ===== */
+/* ===== BUTTONS ===== */
+
 .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
@@ -124,12 +186,18 @@ button {
     padding: 10px 28px;
     border: none;
     border-radius: 999px;
+
     background-color: var(--green);
     color: var(--black);
+
     font-weight: 700;
     font-size: 1rem;
+
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+
+    transition:
+        background-color 0.2s,
+        transform 0.1s;
 }
 
 button:hover {
@@ -145,10 +213,11 @@ button.secondary {
 
 button.secondary:hover {
     background-color: var(--item);
-    border-color: var(--text);
+    border-color: var(--green);
 }
 
-/* ===== Layar kecil ===== */
+/* ===== RESPONSIVE ===== */
+
 @media (max-width: 800px) {
     main {
         padding: 20px 16px;
@@ -156,5 +225,31 @@ button.secondary:hover {
 
     form {
         padding: 20px;
+    }
+}
+
+@media (max-width: 380px) {
+    header {
+        padding: 20px 12px;
+    }
+
+    main {
+        padding: 12px;
+    }
+
+    form {
+        padding: 18px 14px;
+    }
+
+    fieldset {
+        padding: 14px 12px 6px;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .actions button {
+        width: 100%;
     }
 }

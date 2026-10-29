@@ -1,260 +1,388 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pendaftaran Music Player</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+
+    <title>Create Profile - Ramphony</title>
+
     <link rel="stylesheet" href="../assets/css/form.css">
+
+    <style>
+        /* ===== HEADER PROFILE ===== */
+
+        .profile-header {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 28px 20px 0;
+        }
+
+        .profile-header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .profile-header h1 {
+            margin: 0;
+            color: #B5E4BF;
+            font-size: 30px;
+            letter-spacing: 2px;
+        }
+
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 10px 16px;
+            border: 1px solid #444;
+            border-radius: 999px;
+
+            color: #ffffff;
+            font-size: 13px;
+            white-space: nowrap;
+
+            transition: background .2s, border-color .2s;
+        }
+
+        .back-home:hover {
+            background: #303030;
+            border-color: #B5E4BF;
+            color: #B5E4BF;
+        }
+
+        .profile-subtitle {
+            margin: 18px 0 0;
+            color: #aaaaaa;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .form-footer {
+            padding: 24px;
+            color: #aaaaaa;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .profile-header {
+                padding: 20px 16px 0;
+            }
+
+            .profile-header h1 {
+                font-size: 23px;
+            }
+
+            .back-home {
+                padding: 9px 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<nav>
-    <a href="../index.html">Home</a>
-    <a href="about.html">About</a>
-</nav>
+    <!-- ===== HEADER ===== -->
 
-<header>
-    <h1>Register Form Web Music Player</h1>
-    <p>Silakan lengkapi data berikut untuk Masuk.</p>
-</header>
+    <header class="profile-header">
 
-<main>
-  <form action="#" method="post">
+        <div class="profile-header-top">
 
-    <fieldset>
-      <legend>Akun Pengguna</legend>
+            <h1>Ramphony</h1>
 
-      <p>
-        <label for="username">Nama Pengguna</label>
-        <input type="text" id="username" name="username"
-               required minlength="4" maxlength="20"
-               pattern="[A-Za-z0-9_]+"
-               title="Hanya huruf, angka, dan garis bawah"
-               placeholder="Contoh: budi_music">
-      </p>
+            <a href="../index.html" class="back-home">
+                ← Kembali
+            </a>
 
-      <p>
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email"
-               required placeholder="nama@contoh.com">
-      </p>
+        </div>
 
-      <p>
-        <label for="password">Kata Sandi</label>
-        <input type="password" id="password" name="password"
-               required minlength="8">
-      </p>
+        <p class="profile-subtitle">
+            Buat profil untuk pengalaman musik yang lebih personal.
+        </p>
 
-      <p>
-        <label for="tanggal_lahir">Tanggal Lahir</label>
-        <input type="date" id="tanggal_lahir" name="tanggal_lahir"
-               required max="2026-12-31">
-      </p>
-    </fieldset>
+    </header>
 
-    <fieldset>
-      <legend>Berlangganan</legend>
-      <div class="option">
-        <input type="radio" id="free" name="langganan" value="Free" required>
-        <label for="free">Free</label>
-      </div>
-      <div class="option">
-        <input type="radio" id="standard" name="langganan" value="Standard">
-        <label for="standard">Standard</label>
-      </div>
-      <div class="option">
-        <input type="radio" id="premium" name="langganan" value="Premium">
-        <label for="premium">Premium</label>
-      </div>
-    </fieldset>
 
-    <p class="option">
-      <input type="checkbox" id="setuju" name="setuju" required>
-      <label for="setuju">Saya menyetujui data yang saya isi.</label>
-    </p>
+    <!-- ===== CREATE PROFILE FORM ===== -->
 
-    <p class="actions">
-      <button type="submit">Daftar</button>
-      <button type="reset" class="secondary">Reset</button>
-    </p>
+    <main>
 
-  </form>
-</main>
+        <form id="profile-form">
 
-<footer>
-    <p>&copy; 2026 - Pemrograman Web</p>
-</footer>
+            <fieldset>
 
-<script>
-var HARGA = { free: 0, standard: 29000, premium: 49000, vip: 49000 };
+                <legend>Profil Pengguna</legend>
 
-function hargaPaket(p) {
-    return HARGA[String(p).toLowerCase()];
-}
+                <!-- USERNAME -->
 
-function rupiah(n) {
-    return "Rp " + n.toLocaleString("id-ID");
-}
+                <p>
+                    <label for="username">Username</label>
 
-/* ===== Submit form ===== */
-document.querySelector("form").addEventListener("submit", function (e) {
-    e.preventDefault();
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Contoh: ramphony_user"
+                        minlength="3"
+                        maxlength="20"
+                        pattern="[A-Za-z0-9_]+"
+                        title="Gunakan huruf, angka, atau underscore"
+                        autocomplete="username"
+                        required
+                    >
+                </p>
 
-    var form = this;
-    var paket = new FormData(form).get("langganan");
 
-    tampilBayar(paket, function () { kirim(form); });
-});
+                <!-- DISPLAY NAME -->
 
-/* ===== Kirim data ke API ===== */
-function kirim(form) {
-    var fd = new FormData(form);
-    var metode = fd.get("metode") || "POST";
-    var data = {};
-    fd.forEach(function (v, k) {
-        if (k !== "metode" && k !== "password") data[k] = v;
-    });
+                <p>
+                    <label for="display-name">Nama Tampilan</label>
 
-    var url = "https://jsonplaceholder.typicode.com/posts";
-    var opsi = { method: metode };
+                    <input
+                        type="text"
+                        id="display-name"
+                        name="displayName"
+                        placeholder="Contoh: Music Lover"
+                        maxlength="30"
+                        required
+                    >
+                </p>
 
-    if (metode === "POST") {
-        opsi.headers = { "Content-Type": "application/json" };
-        opsi.body = JSON.stringify(data);
-    } else {
-        url += "?" + new URLSearchParams(data).toString();
-    }
 
-    fetch(url, opsi)
-        .then(function (res) {
-            if (!res.ok) throw new Error("Status " + res.status);
-            return res.json();
-        })
-        .then(function () {
-            tampilNotif("Register berhasil", true);
-            form.reset();
-        })
-        .catch(function (err) {
-            console.error(err);
-            tampilNotif("Register gagal", false);
-        });
-}
+                <!-- FAVORITE ARTIST -->
 
-/* ===== Helper overlay & kotak di tengah ===== */
-function buatKotak(warna) {
-    var lama = document.getElementById("notif-overlay");
-    if (lama) lama.remove();
+                <p>
+                    <label for="favorite-artist">
+                        Band / Artis Favorit
+                    </label>
 
-    var overlay = document.createElement("div");
-    overlay.id = "notif-overlay";
-    overlay.style.cssText =
-        "position:fixed;inset:0;z-index:9999;display:flex;" +
-        "align-items:center;justify-content:center;background:rgba(0,0,0,.65);";
+                    <input
+                        type="text"
+                        id="favorite-artist"
+                        name="favoriteArtist"
+                        placeholder="Contoh: Rex Orange County"
+                        maxlength="80"
+                    >
+                </p>
 
-    var kotak = document.createElement("div");
-    kotak.style.cssText =
-        "background:#1e1e1e;color:#fff;text-align:center;padding:32px 40px;" +
-        "border-radius:16px;min-width:320px;max-width:90vw;" +
-        "border-top:6px solid " + warna + ";";
 
-    overlay.appendChild(kotak);
-    document.body.appendChild(overlay);
-    return { overlay: overlay, kotak: kotak };
-}
+                <!-- BIO -->
 
-/* ===== Kotak pembayaran / konfirmasi ===== */
-function tampilBayar(paket, lanjut) {
-    var hijau = "#1db954";
+                <p>
+                    <label for="bio">
+                        Bio Singkat (Opsional)
+                    </label>
 
-    var harga = hargaPaket(paket);
-    if (harga === undefined) {
-        console.error("Paket tidak dikenal:", paket);
-        harga = 0;
-    }
-    var gratis = harga === 0;
+                    <textarea
+                        id="bio"
+                        name="bio"
+                        rows="4"
+                        maxlength="150"
+                        placeholder="Ceritakan sedikit tentang selera musikmu..."
+                    ></textarea>
+                </p>
 
-    var w = buatKotak(hijau);
-    var gaya = "padding:10px 28px;border-radius:999px;font-weight:700;" +
-               "font-size:1rem;cursor:pointer;";
+            </fieldset>
 
-    var teksHarga = gratis
-        ? "Gratis"
-        : rupiah(harga) +
-          "<span style='font-size:.9rem;color:#b3b3b3;font-weight:400;'> / bulan</span>";
 
-    var pilihMetode = gratis ? "" :
-        "<select id='bayar-metode' style='width:100%;padding:10px 14px;" +
-            "background:#2a2a2a;color:#fff;border:1px solid #3a3a3a;" +
-            "border-radius:8px;font-size:1rem;color-scheme:dark;'>" +
-            "<option value=''>-- Pilih metode bayar --</option>" +
-            "<option>Transfer Bank</option>" +
-            "<option>E-Wallet</option>" +
-            "<option>Kartu Kredit</option>" +
-        "</select>";
+            <!-- ===== BUTTONS ===== -->
 
-    w.kotak.innerHTML =
-        "<h2 style='margin:0 0 6px;color:" + hijau + ";'>" +
-            (gratis ? "Konfirmasi" : "Pembayaran") + "</h2>" +
-        "<p style='margin:0;color:#b3b3b3;'>Paket " + paket + "</p>" +
-        "<p style='margin:6px 0 18px;font-size:1.8rem;font-weight:700;'>" + teksHarga + "</p>" +
-        pilihMetode +
-        "<p id='bayar-err' style='color:#ff5252;font-size:.9rem;min-height:22px;margin:8px 0 12px;'></p>" +
-        "<div style='display:flex;gap:12px;justify-content:center;'>" +
-            "<button type='button' id='bayar-batal' style='" + gaya +
-                "background:transparent;color:#fff;border:1px solid #555;'>Batal</button>" +
-            "<button type='button' id='bayar-ok' style='" + gaya +
-                "background:" + hijau + ";color:#000;border:none;'>" +
-                (gratis ? "Konfirmasi" : "Bayar") + "</button>" +
-        "</div>";
+            <div class="actions">
 
-    function tutup() { w.overlay.remove(); }
+                <button type="submit" id="save-profile">
+                    Simpan Profil
+                </button>
 
-    document.getElementById("bayar-batal").addEventListener("click", tutup);
+                <button
+                    type="button"
+                    class="secondary"
+                    id="cancel-profile"
+                >
+                    Batal
+                </button>
 
-    document.getElementById("bayar-ok").addEventListener("click", function () {
-        if (!gratis) {
-            var metode = document.getElementById("bayar-metode").value;
-            if (!metode) {
-                document.getElementById("bayar-err").textContent =
-                    "Pilih metode pembayaran dulu.";
-                return;
+            </div>
+
+        </form>
+
+    </main>
+
+
+    <!-- ===== FOOTER ===== -->
+
+    <footer class="form-footer">
+        <p>© 2026 Ramphony</p>
+    </footer>
+
+
+    <!-- ===== JAVASCRIPT ===== -->
+
+    <script>
+        const STORAGE_KEY = "ramphony_profile";
+
+        const form = document.getElementById("profile-form");
+        const username = document.getElementById("username");
+        const displayName = document.getElementById("display-name");
+        const favoriteArtist = document.getElementById("favorite-artist");
+        const bio = document.getElementById("bio");
+
+        const saveButton = document.getElementById("save-profile");
+        const cancelButton = document.getElementById("cancel-profile");
+
+
+        // ===== LOAD PROFILE =====
+
+        function loadProfile() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+
+                if (!saved) return;
+
+                const profile = JSON.parse(saved);
+
+                username.value = profile.username || "";
+                displayName.value = profile.displayName || "";
+                favoriteArtist.value = profile.favoriteArtist || "";
+                bio.value = profile.bio || "";
+
+                saveButton.textContent = "Perbarui Profil";
+
+            } catch (error) {
+                console.error("Gagal membaca profil:", error);
             }
         }
 
-        this.disabled = true;
-        this.textContent = "Memproses...";
 
-        setTimeout(function () {
-            tutup();
-            lanjut();
-        }, gratis ? 600 : 1500);
-    });
-}
+        // ===== SAVE PROFILE =====
 
-/* ===== Notif berhasil / gagal ===== */
-function tampilNotif(judul, sukses) {
-    var warna = sukses ? "#1db954" : "#ff5252";
-    var w = buatKotak(warna);
+        form.addEventListener("submit", function(event) {
+            event.preventDefault();
 
-    w.kotak.innerHTML =
-        "<div style='width:64px;height:64px;margin:0 auto 16px;border-radius:50%;" +
-        "background:" + warna + ";color:#000;font-size:36px;font-weight:700;" +
-        "line-height:64px;'>" + (sukses ? "&#10003;" : "&#10005;") + "</div>" +
-        "<h2 style='margin:0 0 22px;color:" + warna + ";'>" + judul + "</h2>" +
-        "<button type='button' id='notif-ok' style='padding:10px 32px;border:none;" +
-        "border-radius:999px;background:" + warna + ";color:#000;font-weight:700;" +
-        "cursor:pointer;'>OK</button>";
+            if (!form.reportValidity()) return;
 
-    function tutup() { w.overlay.remove(); }
-    document.getElementById("notif-ok").addEventListener("click", tutup);
-    w.overlay.addEventListener("click", function (e) {
-        if (e.target === w.overlay) tutup();
-    });
-    setTimeout(tutup, 4000);
-}
-</script>
+            const profile = {
+                username: username.value.trim(),
+                displayName: displayName.value.trim(),
+                favoriteArtist: favoriteArtist.value.trim(),
+                bio: bio.value.trim()
+            };
+
+            if (!profile.username || !profile.displayName) {
+                alert("Username dan nama tampilan wajib diisi.");
+                return;
+            }
+
+            try {
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(profile)
+                );
+
+                showNotification("Profil berhasil disimpan!");
+
+                saveButton.textContent = "Perbarui Profil";
+
+            } catch (error) {
+                console.error("Gagal menyimpan profil:", error);
+                alert("Profil gagal disimpan. Coba lagi.");
+            }
+        });
+
+
+        // ===== CANCEL =====
+
+        cancelButton.addEventListener("click", function() {
+            window.location.href = "../index.html";
+        });
+
+
+        // ===== NOTIFICATION =====
+
+        function showNotification(message) {
+            const existing = document.getElementById("profile-overlay");
+
+            if (existing) existing.remove();
+
+            const overlay = document.createElement("div");
+            overlay.id = "profile-overlay";
+
+            overlay.style.cssText = `
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                background: rgba(0,0,0,0.75);
+            `;
+
+            const box = document.createElement("div");
+
+            box.style.cssText = `
+                width: 100%;
+                max-width: 380px;
+                padding: 32px;
+                background: #202020;
+                border-top: 5px solid #B5E4BF;
+                border-radius: 18px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 15px 45px rgba(0,0,0,0.4);
+            `;
+
+            const icon = document.createElement("div");
+            icon.textContent = "✓";
+
+            icon.style.cssText = `
+                width: 64px;
+                height: 64px;
+                line-height: 64px;
+                margin: 0 auto 18px;
+                border-radius: 50%;
+                background: #B5E4BF;
+                color: #071b12;
+                font-size: 36px;
+                font-weight: bold;
+            `;
+
+            const title = document.createElement("h2");
+            title.textContent = message;
+            title.style.marginBottom = "12px";
+
+            const description = document.createElement("p");
+            description.textContent =
+                "Profil kamu sudah tersimpan di browser ini.";
+
+            description.style.cssText = `
+                color: #aaaaaa;
+                font-size: 14px;
+                margin-bottom: 24px;
+            `;
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = "Kembali ke Ramphony";
+
+            button.addEventListener("click", function() {
+                window.location.href = "../index.html";
+            });
+
+            box.append(icon, title, description, button);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+        }
+
+
+        // ===== INITIALIZE =====
+
+        loadProfile();
+    </script>
 
 </body>
 </html>

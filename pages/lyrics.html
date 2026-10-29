@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ramphony Lyrics</title>
+  <link rel="stylesheet" href="../assets/css/lyrics.css">
+</head>
+
+<body>
+
+  <main class="lyrics-app">
+
+    <!-- TOP NAVIGATION -->
+    <header class="lyrics-header">
+      <div class="brand">
+        <span class="brand-icon">♫</span>
+        <span>RAMPHONY</span>
+      </div>
+
+      <div class="header-right">
+        <span class="mode-label">LYRICS MODE</span>
+
+        <button
+          id="close-lyrics"
+          class="close-button"
+          type="button"
+          aria-label="Tutup lyrics"
+        >
+          &times;
+        </button>
+      </div>
+    </header>
+
+    <!-- LYRICS AREA -->
+    <section class="lyrics-screen">
+
+      <div class="song-information">
+        <span class="now-playing-label">
+          NOW PLAYING
+        </span>
+
+        <h1 id="song-title">
+          NO TRACK SELECTED
+        </h1>
+      </div>
+
+      <div id="lyrics-content" class="lyrics-content">
+        <div id="lyrics-text" class="lyrics-text">
+          Pilih lagu untuk menampilkan lirik.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- BOTTOM PROGRESS -->
+    <footer class="lyrics-footer">
+
+      <div class="progress-row">
+
+        <div class="time-info">
+          <span id="lyrics-current">0:00</span>
+          <span class="time-divider">/</span>
+          <span id="lyrics-duration">0:00</span>
+        </div>
+
+        <input
+          id="lyrics-progress"
+          type="range"
+          min="0"
+          max="100"
+          step="0.1"
+          value="0"
+          aria-label="Geser posisi lagu"
+        >
+
+        <div class="footer-actions">
+
+          <label class="upload-link" for="lyrics-file">
+            Upload Lyrics
+          </label>
+
+          <input
+            id="lyrics-file"
+            type="file"
+            accept=".txt,.lrc"
+            hidden
+          >
+
+          <button id="delete-lyrics" type="button">
+            Hapus Lyrics
+          </button>
+
+        </div>
+
+      </div>
+
+    </footer>
+
+  </main>
+
+  <!-- ONLINE + SYNCED LYRICS -->
+  <script src="../assets/js/lyrics.js"></script>
+
+  <!-- PROGRESS BAR TERHUBUNG KE AUDIO UTAMA -->
+  <script>
+    (() => {
+      const progress = document.querySelector("#lyrics-progress");
+      const currentLabel = document.querySelector("#lyrics-current");
+      const durationLabel = document.querySelector("#lyrics-duration");
+
+      let isDragging = false;
+
+      function getAudio() {
+        try {
+          return window.parent.document.querySelector("#a");
+        } catch {
+          return null;
+        }
+      }
+
+      function formatTime(seconds) {
+        if (!Number.isFinite(seconds) || seconds < 0) {
+          return "0:00";
+        }
+
+        const minutes = Math.floor(seconds / 60);
+        const remaining = Math.floor(seconds % 60);
+
+        return minutes + ":" +
+          String(remaining).padStart(2, "0");
+      }
+
+      function updateProgress() {
+        const audio = getAudio();
+
+        if (audio) {
+          const duration = Number.isFinite(audio.duration)
+            ? audio.duration
+            : 0;
+
+          const current = audio.currentTime || 0;
+
+          durationLabel.textContent = formatTime(duration);
+
+          if (!isDragging) {
+            currentLabel.textContent = formatTime(current);
+
+            progress.value = duration > 0
+              ? (current / duration) * 100
+              : 0;
+          }
+
+          progress.style.setProperty(
+            "--progress",
+            progress.value + "%"
+          );
+        }
+
+        requestAnimationFrame(updateProgress);
+      }
+
+      progress.addEventListener("pointerdown", () => {
+        isDragging = true;
+      });
+
+      progress.addEventListener("input", () => {
+        const audio = getAudio();
+
+        if (!audio || !Number.isFinite(audio.duration)) {
+          return;
+        }
+
+        const time =
+          (Number(progress.value) / 100) * audio.duration;
+
+        currentLabel.textContent = formatTime(time);
+
+        progress.style.setProperty(
+          "--progress",
+          progress.value + "%"
+        );
+
+        audio.currentTime = time;
+      });
+
+      function stopDragging() {
+        isDragging = false;
+      }
+
+      progress.addEventListener("pointerup", stopDragging);
+      progress.addEventListener("pointercancel", stopDragging);
+      progress.addEventListener("change", stopDragging);
+
+      updateProgress();
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,492 @@
+
+/* =========================================
+   RAMPHONY - FROSTED GLASS LYRICS
+   ========================================= */
+
+:root {
+  --mint: #b5e4bf;
+  --mint-bright: #c9f0d1;
+  --background: #101211;
+  --muted: #858e88;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--background);
+  color: white;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* ===== FULLSCREEN ===== */
+
+.lyrics-app {
+  position: relative;
+  isolation: isolate;
+
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      ellipse at 37% 38%,
+      rgba(117, 184, 137, .19),
+      transparent 48%
+    ),
+    radial-gradient(
+      ellipse at 88% 12%,
+      rgba(83, 142, 109, .12),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 75% 86%,
+      rgba(100, 156, 115, .10),
+      transparent 35%
+    ),
+    #101211;
+}
+
+/* Blurred glass shapes */
+
+.lyrics-app::before {
+  content: "";
+  position: absolute;
+  inset: -15%;
+  z-index: -2;
+
+  background:
+    linear-gradient(
+      120deg,
+      transparent 18%,
+      rgba(135, 214, 158, .15) 37%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 35% 40%,
+      rgba(143, 216, 165, .24),
+      transparent 38%
+    );
+
+  filter: blur(85px);
+  pointer-events: none;
+}
+
+.lyrics-app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background: rgba(12, 15, 13, .32);
+  backdrop-filter: blur(36px);
+  -webkit-backdrop-filter: blur(36px);
+
+  pointer-events: none;
+}
+
+/* ===== HEADER ===== */
+
+.lyrics-header {
+  flex-shrink: 0;
+
+  min-height: 92px;
+  padding: 22px 4%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid rgba(255,255,255,.16);
+  background: transparent;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  color: var(--mint);
+  font-size: 16px;
+  letter-spacing: 3px;
+  font-weight: 600;
+}
+
+.brand-icon {
+  font-size: 26px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.mode-label {
+  color: var(--mint);
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+.close-button {
+  width: 42px;
+  height: 42px;
+
+  display: grid;
+  place-items: center;
+
+  background: transparent;
+  border: none;
+
+  color: var(--mint);
+  font-size: 36px;
+  font-weight: 300;
+
+  cursor: pointer;
+  transition: transform .2s;
+}
+
+.close-button:hover {
+  transform: scale(1.12);
+}
+
+/* ===== MAIN LYRICS ===== */
+
+.lyrics-screen {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 28px 7vw 0;
+
+  overflow: hidden;
+}
+
+.song-information {
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.now-playing-label {
+  color: var(--mint);
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+#song-title {
+  margin-top: 14px;
+
+  color: #f2fff3;
+  font-size: clamp(22px, 3vw, 36px);
+  font-weight: 700;
+
+  overflow-wrap: anywhere;
+}
+
+/* ===== SCROLLABLE LYRICS ===== */
+
+#lyrics-content {
+  flex: 1;
+  min-height: 0;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  margin-top: 20px;
+  padding: 12vh 0 30vh;
+
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+#lyrics-content::-webkit-scrollbar {
+  display: none;
+}
+
+#lyrics-text {
+  max-width: 1100px;
+  margin: 0 auto;
+
+  color: #c0c8c1;
+  text-align: center;
+
+  white-space: pre-wrap;
+
+  font-size: clamp(24px, 3.5vw, 44px);
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+/* ===== SYNCED LYRICS ===== */
+
+#lyrics-text.synced-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+
+  white-space: normal;
+}
+
+.lyric-line {
+  width: 100%;
+  max-width: 1050px;
+
+  color: #a6aea7;
+  opacity: .35;
+
+  font-size: clamp(24px, 3.5vw, 49px);
+  font-weight: 750;
+  line-height: 1.35;
+
+  text-align: center;
+  overflow-wrap: anywhere;
+
+  cursor: pointer;
+
+  transition:
+    color .25s ease,
+    opacity .25s ease,
+    transform .25s ease;
+}
+
+.lyric-line.active {
+  color: var(--mint-bright);
+  opacity: 1;
+  transform: scale(1.035);
+
+  text-shadow: 0 0 28px rgba(181, 228, 191, .12);
+}
+
+.lyric-line.past {
+  color: #b5e4bf;
+  opacity: .4;
+}
+
+.lyric-line:hover {
+  opacity: .8;
+}
+
+/* ===== BOTTOM BAR ===== */
+
+.lyrics-footer {
+  flex-shrink: 0;
+
+  padding: 22px 4% 26px;
+
+  border-top: 1px solid rgba(255,255,255,.07);
+
+  background: rgba(15, 18, 16, .45);
+  backdrop-filter: blur(16px);
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.time-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+
+  color: #d4ded5;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+}
+
+.time-divider {
+  color: #69736b;
+}
+
+/* ===== SEEK BAR ===== */
+
+#lyrics-progress {
+  flex: 1;
+  min-width: 0;
+
+  height: 5px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: none;
+  border-radius: 20px;
+  outline: none;
+
+  background: linear-gradient(
+    to right,
+    var(--mint) 0%,
+    var(--mint) var(--progress, 0%),
+    #39453e var(--progress, 0%),
+    #39453e 100%
+  );
+
+  cursor: pointer;
+}
+
+#lyrics-progress::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 15px;
+  height: 15px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: var(--mint);
+  box-shadow: 0 0 12px rgba(181,228,191,.35);
+}
+
+#lyrics-progress::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: var(--mint);
+}
+
+/* ===== FOOTER ACTIONS ===== */
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  flex-shrink: 0;
+}
+
+.upload-link,
+#delete-lyrics {
+  background: transparent;
+  border: none;
+
+  color: #a5afa7;
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: color .2s;
+}
+
+.upload-link:hover,
+#delete-lyrics:hover {
+  color: var(--mint);
+}
+
+/* ===== SYNC BADGE FROM JS ===== */
+
+.lyrics-sync-label {
+  position: fixed !important;
+  right: auto !important;
+  left: 4% !important;
+  bottom: 85px !important;
+
+  z-index: 10;
+
+  padding: 0 !important;
+  background: transparent !important;
+
+  color: var(--mint) !important;
+  font-family: "Courier New", monospace !important;
+  font-size: 11px !important;
+  letter-spacing: 1px;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 800px) {
+  .lyrics-header {
+    min-height: 70px;
+    padding: 14px 20px;
+  }
+
+  .brand {
+    font-size: 13px;
+  }
+
+  .mode-label {
+    display: none;
+  }
+
+  .lyrics-screen {
+    padding: 22px 18px 0;
+  }
+
+  #lyrics-content {
+    padding-top: 10vh;
+  }
+
+  .lyric-line {
+    font-size: clamp(23px, 6vw, 34px);
+  }
+
+  .lyrics-footer {
+    padding: 18px;
+  }
+
+  .progress-row {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .time-info {
+    width: 100%;
+  }
+
+  #lyrics-progress {
+    flex-basis: 100%;
+    order: 2;
+  }
+
+  .footer-actions {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lyrics-sync-label {
+    bottom: 130px !important;
+    left: 18px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+
+/* Sembunyikan tombol Upload & Hapus Lyrics */
+.footer-actions {
+  display: none !important;
+}
