@@ -1217,3 +1217,55 @@ body.drop {
 .menu-toggle[aria-expanded="true"] {
   display: none !important;
 }
+
+
+/* ===== RAMPHONY DESKTOP COMPACT FIX ===== */
+@media screen and (min-width: 1024px) {
+
+  .player-panel {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 16px !important;
+  }
+
+  .lcd-display {
+    min-height: 0 !important;
+    height: clamp(190px, 29vh, 270px) !important;
+    padding: 20px 22px !important;
+  }
+
+  .lcd-title {
+    font-size: clamp(19px, 1.7vw, 26px) !important;
+  }
+
+  .lcd-bottom {
+    padding-top: 10px !important;
+  }
+
+  .player-panel > .lcd-progress {
+    margin: 14px 0 0 !important;
+    padding: 0 8px !important;
+  }
+
+  .player-panel > .mobile-controls {
+    margin: 16px 0 0 !important;
+    padding: 12px 18px !important;
+    gap: 12px !important;
+    border-radius: 20px !important;
+  }
+
+  .player-panel .mobile-controls .control-btn.primary {
+    width: 62px !important;
+    height: 62px !important;
+  }
+
+  .player-panel .mobile-controls .control-btn:not(.primary) {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .player-panel .mobile-controls .control-btn.primary svg {
+    width: 25px !important;
+    height: 25px !important;
+  }
+}

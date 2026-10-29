@@ -2,9 +2,9 @@
 "use strict";
 
 /* ==========================================
-   RAMPHONY - SHARED FULLSCREEN LYRICS
-   Home + My Playlist
-   ========================================== */
+   RAMPHONY - SHARED LYRICS
+   HOME + MY PLAYLIST
+========================================== */
 
 const songTitle = document.querySelector("#song-title");
 const lyricsText = document.querySelector("#lyrics-text");
@@ -12,6 +12,14 @@ const lyricsFile = document.querySelector("#lyrics-file");
 const lyricsContent = document.querySelector("#lyrics-content");
 const deleteButton = document.querySelector("#delete-lyrics");
 const closeButton = document.querySelector("#close-lyrics");
+
+const playButton = document.querySelector("#lyrics-play");
+const prevButton = document.querySelector("#lyrics-prev");
+const nextButton = document.querySelector("#lyrics-next");
+
+const progress = document.querySelector("#lyrics-progress");
+const currentLabel = document.querySelector("#lyrics-current");
+const durationLabel = document.querySelector("#lyrics-duration");
 
 const API_URL = "https://lrclib.net/api/search";
 
@@ -22,6 +30,8 @@ let activeLine = -1;
 let currentRequest = 0;
 let controller = null;
 let currentMode = "plain";
+let lastAudioSrc = "";
+let isDragging = false;
 
 const cache = new Map();
 
@@ -46,6 +56,11 @@ function installFullscreenStyles() {
       border: none !important;
       border-radius: 0 !important;
     }
+
+    /* Hapus semua badge status lama */
+    .lyrics-sync-label {
+      display: none !important;
+    }
   `;
 
   document.head.appendChild(style);
@@ -53,27 +68,29 @@ function installFullscreenStyles() {
 
 installFullscreenStyles();
 
-/* ===== STATUS BADGE ===== */
+/*
+  Tidak ada lagi pembuatan badge
+  "SYNCED LYRICS".
+*/
 
-const syncBadge = document.createElement("div");
-syncBadge.className = "lyrics-sync-label";
-syncBadge.textContent = "RAMPHONY LYRICS";
-document.body.appendChild(syncBadge);
+/* ===== AUDIO HOME / PLAYLIST ===== */
 
-function setBadge(text) {
-  syncBadge.textContent = text;
-}
-
-/* ===== AUDIO: HOME OR PLAYLIST ===== */
-
-function getAudio() {
+function getParentDocument() {
   try {
-    return window.parent.document.querySelector(
-      "#playlist-audio, #a"
-    );
+    return window.parent.document;
   } catch {
     return null;
   }
+}
+
+function getAudio() {
+  const doc = getParentDocument();
+
+  if (!doc) return null;
+
+  return doc.querySelector(
+    "#playlist-audio, #a"
+  );
 }
 
 function getDuration() {
@@ -82,6 +99,17 @@ function getDuration() {
   return audio && Number.isFinite(audio.duration)
     ? audio.duration
     : 0;
+}
+
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return "0:00";
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remaining = Math.floor(seconds % 60);
+
+  return minutes + ":" + String(remaining).padStart(2, "0");
 }
 
 /* ===== HELPERS ===== */
@@ -104,8 +132,14 @@ function cleanSongName(filename) {
   return String(filename || "")
     .replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "")
     .replace(/^\d{1,3}[\s._-]+/, "")
-    .replace(/\([^)]*(official|lyric|audio|video|visualizer)[^)]*\)/gi, "")
-    .replace(/\[[^\]]*(official|lyric|audio|video|visualizer)[^\]]*\]/gi, "")
+    .replace(
+      /\([^)]*(official|lyric|audio|video|visualizer)[^)]*\)/gi,
+      ""
+    )
+    .replace(
+      /\[[^\]]*(official|lyric|audio|video|visualizer)[^\]]*\]/gi,
+      ""
+    )
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -225,7 +259,6 @@ function showSyncedLyrics(lrc) {
 
   lyricsText.appendChild(fragment);
 
-  setBadge("● SYNCED LYRICS");
   updateSyncedLyrics(true);
 }
 
@@ -285,14 +318,7 @@ function updateSyncedLyrics(force = false) {
   }
 }
 
-function syncLoop() {
-  updateSyncedLyrics();
-  requestAnimationFrame(syncLoop);
-}
-
-requestAnimationFrame(syncLoop);
-
-/* ===== LRCLIB RESULT MATCHING ===== */
+/* ===== LRCLIB MATCHING ===== */
 
 function scoreResult(record, info, duration) {
   const title = normalize(record.trackName || record.name);
@@ -359,7 +385,6 @@ function chooseBestResult(records, info, duration) {
 
 function showRecord(record) {
   if (record.instrumental) {
-    setBadge("INSTRUMENTAL");
     showMessage("♪\n\nINSTRUMENTAL");
     return;
   }
@@ -370,16 +395,14 @@ function showRecord(record) {
   }
 
   if (record.plainLyrics?.trim()) {
-    setBadge("STATIC LYRICS");
     showMessage(record.plainLyrics.trim());
     return;
   }
 
-  setBadge("NO LYRICS");
   showMessage("NO LYRICS AVAILABLE");
 }
 
-/* ===== SEARCH API ===== */
+/* ===== SEARCH LYRICS ===== */
 
 async function searchLyrics(info, signal) {
   const params = new URLSearchParams({
@@ -416,7 +439,6 @@ async function loadLyrics() {
   controller = new AbortController();
 
   if (!currentSong) {
-    setBadge("NO TRACK");
     showMessage("Pilih lagu dulu, bro.");
     return;
   }
@@ -430,12 +452,10 @@ async function loadLyrics() {
     console.warn(error);
   }
 
-  // Prioritaskan lirik yang diupload user.
   if (manualLyrics.trim()) {
     if (parseLRC(manualLyrics).length) {
       showSyncedLyrics(manualLyrics);
     } else {
-      setBadge("MANUAL LYRICS");
       showMessage(manualLyrics);
     }
     return;
@@ -449,14 +469,12 @@ async function loadLyrics() {
   }
 
   if (!navigator.onLine) {
-    setBadge("OFFLINE");
     showMessage(
       "OFFLINE\n\nButuh internet untuk mencari lirik."
     );
     return;
   }
 
-  setBadge("SEARCHING...");
   showMessage("SEARCHING LYRICS...");
 
   const cleanedName = cleanSongName(currentSong);
@@ -506,7 +524,6 @@ async function loadLyrics() {
       cache.set(key, bestRecord);
       showRecord(bestRecord);
     } else {
-      setBadge("NOT FOUND");
       showMessage(
         "NO LYRICS FOUND\n\n" +
         "Coba gunakan nama file:\n" +
@@ -519,7 +536,6 @@ async function loadLyrics() {
 
     console.error("Gagal mengambil lirik:", error);
 
-    setBadge("LYRICS UNAVAILABLE");
     showMessage(
       "LYRICS UNAVAILABLE\n\n" +
       "Lirik belum bisa dimuat dari layanan online."
@@ -558,44 +574,37 @@ window.addEventListener("message", event => {
   }
 });
 
-/* ===== AUTO DETECT HOME / PLAYLIST TRACK ===== */
-
-let lastAudioSrc = "";
+/* ===== AUTO DETECT TRACK ===== */
 
 function checkSongChange() {
-  try {
-    const parentDoc = window.parent.document;
+  const parentDoc = getParentDocument();
+  if (!parentDoc) return;
 
-    const audio = parentDoc.querySelector(
-      "#playlist-audio, #a"
-    );
+  const audio = getAudio();
 
-    const title = parentDoc.querySelector(
-      "#playing-title, #title"
-    );
+  const title = parentDoc.querySelector(
+    "#playing-title, #title"
+  );
 
-    if (!audio || !title) return;
+  if (!audio || !title) return;
 
-    const src =
-      audio.getAttribute("src") ||
-      audio.currentSrc ||
-      audio.src ||
-      "";
+  const src =
+    audio.getAttribute("src") ||
+    audio.currentSrc ||
+    audio.src ||
+    "";
 
-    if (src && src !== lastAudioSrc) {
-      lastAudioSrc = src;
-      setSong(title.textContent.trim(), src);
-    }
-  } catch {
-    // Parent tidak dapat diakses.
+  if (src && src !== lastAudioSrc) {
+    lastAudioSrc = src;
+    setSong(title.textContent.trim(), src);
   }
 }
 
 setInterval(checkSongChange, 500);
 
-/* ===== MANUAL TXT / LRC ===== */
+/* ===== UPLOAD TXT / LRC ===== */
 
-lyricsFile.addEventListener("change", async event => {
+lyricsFile?.addEventListener("change", async event => {
   const file = event.target.files[0];
 
   if (!file) return;
@@ -631,7 +640,6 @@ lyricsFile.addEventListener("change", async event => {
       if (parseLRC(content).length) {
         showSyncedLyrics(content);
       } else {
-        setBadge("MANUAL LYRICS");
         showMessage(content);
       }
     }
@@ -645,7 +653,7 @@ lyricsFile.addEventListener("change", async event => {
 
 /* ===== DELETE MANUAL LYRICS ===== */
 
-deleteButton.addEventListener("click", () => {
+deleteButton?.addEventListener("click", () => {
   if (!currentSong) return;
 
   try {
@@ -658,9 +666,159 @@ deleteButton.addEventListener("click", () => {
   }
 });
 
-/* ===== CLOSE FULLSCREEN ===== */
+/* ===== PLAY / PAUSE ===== */
 
-closeButton.addEventListener("click", () => {
+playButton?.addEventListener("click", () => {
+  const audio = getAudio();
+  if (!audio) return;
+
+  if (audio.paused) {
+    audio.play().catch(error => {
+      console.warn("Gagal memutar lagu:", error);
+    });
+  } else {
+    audio.pause();
+  }
+});
+
+/* ===== PREVIOUS / NEXT ===== */
+
+function clickParentControl(...selectors) {
+  const parentDoc = getParentDocument();
+  if (!parentDoc) return;
+
+  for (const selector of selectors) {
+    const button = parentDoc.querySelector(selector);
+
+    if (button) {
+      button.click();
+      return;
+    }
+  }
+}
+
+prevButton?.addEventListener("click", () => {
+  clickParentControl(
+    "#player-prev",
+    "#mobile-prev",
+    "#prev"
+  );
+});
+
+nextButton?.addEventListener("click", () => {
+  clickParentControl(
+    "#player-next",
+    "#mobile-next",
+    "#next"
+  );
+});
+
+/* ===== SEEK HOME + PLAYLIST ===== */
+
+function seekTo(percent) {
+  const audio = getAudio();
+
+  if (
+    !audio ||
+    !Number.isFinite(audio.duration) ||
+    audio.duration <= 0
+  ) {
+    return;
+  }
+
+  const value = Math.max(
+    0,
+    Math.min(100, Number(percent) || 0)
+  );
+
+  audio.currentTime = (value / 100) * audio.duration;
+
+  if (currentLabel) {
+    currentLabel.textContent = formatTime(audio.currentTime);
+  }
+}
+
+progress?.addEventListener("pointerdown", () => {
+  isDragging = true;
+});
+
+progress?.addEventListener(
+  "input",
+  event => {
+    isDragging = true;
+    seekTo(progress.value);
+    progress.style.setProperty(
+      "--progress",
+      progress.value + "%"
+    );
+
+    // Cegah handler seek lama menimpa kontrol Playlist.
+    event.stopImmediatePropagation();
+  },
+  true
+);
+
+function stopDragging() {
+  isDragging = false;
+}
+
+progress?.addEventListener("pointerup", stopDragging);
+progress?.addEventListener("pointercancel", stopDragging);
+progress?.addEventListener("change", stopDragging);
+
+/* ===== UPDATE CONTROLS ===== */
+
+function updatePlayerControls() {
+  const audio = getAudio();
+
+  if (playButton) {
+    playButton.textContent =
+      audio && !audio.paused ? "⏸" : "▶";
+
+    playButton.setAttribute(
+      "aria-label",
+      audio && !audio.paused ? "Pause" : "Play"
+    );
+  }
+
+  if (audio) {
+    const duration = Number.isFinite(audio.duration)
+      ? audio.duration
+      : 0;
+
+    const current = audio.currentTime || 0;
+
+    if (durationLabel) {
+      durationLabel.textContent = formatTime(duration);
+    }
+
+    if (!isDragging) {
+      if (currentLabel) {
+        currentLabel.textContent = formatTime(current);
+      }
+
+      if (progress) {
+        progress.value = duration > 0
+          ? (current / duration) * 100
+          : 0;
+
+        progress.style.setProperty(
+          "--progress",
+          progress.value + "%"
+        );
+      }
+    }
+  }
+
+  updateSyncedLyrics();
+  requestAnimationFrame(updatePlayerControls);
+}
+
+requestAnimationFrame(updatePlayerControls);
+
+/* ===== CLOSE LYRICS ===== */
+
+closeButton?.addEventListener("click", () => {
   if (window.parent !== window) {
     window.parent.postMessage(
       { type: "RAMPHONY_CLOSE_LYRICS" },

@@ -4,15 +4,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Ramphony Lyrics</title>
-  <link rel="stylesheet" href="../assets/css/lyrics.css">
+  <link rel="stylesheet" href="../assets/css/lyrics.css?v=10">
 </head>
 
 <body>
-
   <main class="lyrics-app">
 
-    <!-- TOP NAVIGATION -->
+    <!-- HEADER -->
     <header class="lyrics-header">
       <div class="brand">
         <span class="brand-icon">♫</span>
@@ -54,9 +54,42 @@
 
     </section>
 
-    <!-- BOTTOM PROGRESS -->
+    <!-- PLAYER FOOTER -->
     <footer class="lyrics-footer">
 
+      <!-- HANYA SATU SET TOMBOL -->
+      <div class="lyrics-player-controls">
+
+        <button
+          id="lyrics-prev"
+          type="button"
+          title="Previous"
+          aria-label="Lagu sebelumnya"
+        >
+          ⏮
+        </button>
+
+        <button
+          id="lyrics-play"
+          type="button"
+          title="Play / Pause"
+          aria-label="Play atau Pause"
+        >
+          ▶
+        </button>
+
+        <button
+          id="lyrics-next"
+          type="button"
+          title="Next"
+          aria-label="Lagu berikutnya"
+        >
+          ⏭
+        </button>
+
+      </div>
+
+      <!-- SEEK BAR -->
       <div class="progress-row">
 
         <div class="time-info">
@@ -75,6 +108,7 @@
           aria-label="Geser posisi lagu"
         >
 
+        <!-- Dipertahankan untuk kompatibilitas lyrics.js -->
         <div class="footer-actions">
 
           <label class="upload-link" for="lyrics-file">
@@ -88,7 +122,10 @@
             hidden
           >
 
-          <button id="delete-lyrics" type="button">
+          <button
+            id="delete-lyrics"
+            type="button"
+          >
             Hapus Lyrics
           </button>
 
@@ -100,102 +137,8 @@
 
   </main>
 
-  <!-- ONLINE + SYNCED LYRICS -->
+  <!-- Semua fungsi Lyrics dan kontrol audio -->
   <script src="../assets/js/lyrics.js"></script>
-
-  <!-- PROGRESS BAR TERHUBUNG KE AUDIO UTAMA -->
-  <script>
-    (() => {
-      const progress = document.querySelector("#lyrics-progress");
-      const currentLabel = document.querySelector("#lyrics-current");
-      const durationLabel = document.querySelector("#lyrics-duration");
-
-      let isDragging = false;
-
-      function getAudio() {
-        try {
-          return window.parent.document.querySelector("#a");
-        } catch {
-          return null;
-        }
-      }
-
-      function formatTime(seconds) {
-        if (!Number.isFinite(seconds) || seconds < 0) {
-          return "0:00";
-        }
-
-        const minutes = Math.floor(seconds / 60);
-        const remaining = Math.floor(seconds % 60);
-
-        return minutes + ":" +
-          String(remaining).padStart(2, "0");
-      }
-
-      function updateProgress() {
-        const audio = getAudio();
-
-        if (audio) {
-          const duration = Number.isFinite(audio.duration)
-            ? audio.duration
-            : 0;
-
-          const current = audio.currentTime || 0;
-
-          durationLabel.textContent = formatTime(duration);
-
-          if (!isDragging) {
-            currentLabel.textContent = formatTime(current);
-
-            progress.value = duration > 0
-              ? (current / duration) * 100
-              : 0;
-          }
-
-          progress.style.setProperty(
-            "--progress",
-            progress.value + "%"
-          );
-        }
-
-        requestAnimationFrame(updateProgress);
-      }
-
-      progress.addEventListener("pointerdown", () => {
-        isDragging = true;
-      });
-
-      progress.addEventListener("input", () => {
-        const audio = getAudio();
-
-        if (!audio || !Number.isFinite(audio.duration)) {
-          return;
-        }
-
-        const time =
-          (Number(progress.value) / 100) * audio.duration;
-
-        currentLabel.textContent = formatTime(time);
-
-        progress.style.setProperty(
-          "--progress",
-          progress.value + "%"
-        );
-
-        audio.currentTime = time;
-      });
-
-      function stopDragging() {
-        isDragging = false;
-      }
-
-      progress.addEventListener("pointerup", stopDragging);
-      progress.addEventListener("pointercancel", stopDragging);
-      progress.addEventListener("change", stopDragging);
-
-      updateProgress();
-    })();
-  </script>
 
 </body>
 </html>

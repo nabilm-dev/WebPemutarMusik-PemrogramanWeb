@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/ramphony.html",
+      "permanent": false
+    }
+  ]
+}

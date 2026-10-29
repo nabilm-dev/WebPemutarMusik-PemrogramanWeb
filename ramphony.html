@@ -1,0 +1,410 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ramphony</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #101211;
+    }
+
+    .view {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #101211;
+    }
+
+    .view.active {
+      z-index: 2;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .view.inactive {
+      z-index: 1;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <iframe
+    id="home-view"
+    class="view active"
+    src="index.html"
+    title="Home"
+    allow="autoplay">
+  </iframe>
+
+  <iframe
+    id="playlist-view"
+    class="view inactive"
+    src="pages/playlist.html"
+    title="My Playlist"
+    allow="autoplay">
+  </iframe>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const homeFrame =
+        document.getElementById("home-view");
+
+      const playlistFrame =
+        document.getElementById("playlist-view");
+
+      const frames = {
+        home: homeFrame,
+        playlist: playlistFrame
+      };
+
+      let activeAudioPage = null;
+
+      function getDoc(page) {
+        try {
+          return frames[page].contentDocument;
+        } catch (error) {
+          console.warn(error);
+          return null;
+        }
+      }
+
+      function getAudio(page) {
+        const doc = getDoc(page);
+
+        if (!doc) return null;
+
+        return doc.getElementById(
+          page === "home"
+            ? "a"
+            : "playlist-audio"
+        );
+      }
+
+      function showPage(page, updateHistory = true) {
+        if (!frames[page]) return;
+
+        Object.entries(frames).forEach(([name, frame]) => {
+          const active = name === page;
+
+          frame.classList.toggle("active", active);
+          frame.classList.toggle("inactive", !active);
+        });
+
+        if (updateHistory) {
+          history.pushState(
+            { page },
+            "",
+            page === "home" ? "#home" : "#playlist"
+          );
+        }
+      }
+
+      function handleAudioPlay(page) {
+        activeAudioPage = page;
+
+        const otherPage =
+          page === "home" ? "playlist" : "home";
+
+        const otherAudio = getAudio(otherPage);
+
+        if (otherAudio && !otherAudio.paused) {
+          otherAudio.pause();
+        }
+      }
+
+      function handleNavigation(page) {
+        const doc = getDoc(page);
+
+        if (!doc) return;
+
+        doc.addEventListener("click", event => {
+          const link = event.target.closest?.("a[href]");
+
+          if (!link) return;
+
+          const href = link.getAttribute("href");
+
+          if (!href) return;
+
+          let destination = null;
+
+          try {
+            const url = new URL(href, doc.baseURI);
+
+            if (url.origin !== location.origin) return;
+
+            const path = url.pathname;
+
+            if (
+              path.endsWith("/index.html") ||
+              (
+                path.endsWith("/ramphony.html") &&
+                url.hash === "#home"
+              )
+            ) {
+              destination = "home";
+            }
+
+            if (
+              path.endsWith("/pages/playlist.html") ||
+              (
+                path.endsWith("/ramphony.html") &&
+                url.hash === "#playlist"
+              )
+            ) {
+              destination = "playlist";
+            }
+          } catch {
+            return;
+          }
+
+          if (!destination) return;
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+
+          showPage(destination);
+        }, true);
+
+        doc.addEventListener("click", event => {
+          const element =
+            event.target.closest?.("[data-page]");
+
+          if (!element) return;
+
+          const destination = element.dataset.page;
+
+          if (
+            destination !== "home" &&
+            destination !== "playlist"
+          ) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+
+          showPage(destination);
+        }, true);
+
+        const audio = getAudio(page);
+
+        if (audio) {
+          audio.addEventListener("play", () => {
+            handleAudioPlay(page);
+          });
+        }
+      }
+
+      function formatTime(seconds) {
+        if (
+          !Number.isFinite(seconds) ||
+          seconds < 0
+        ) {
+          return "0:00";
+        }
+
+        const minutes = Math.floor(seconds / 60);
+        const remaining = Math.floor(seconds % 60);
+
+        return minutes + ":" +
+          String(remaining).padStart(2, "0");
+      }
+
+      function syncLCD() {
+        if (activeAudioPage !== "playlist") return;
+
+        const homeDoc = getDoc("home");
+        const playlistDoc = getDoc("playlist");
+        const audio = getAudio("playlist");
+
+        if (!homeDoc || !playlistDoc || !audio) {
+          return;
+        }
+
+        const title =
+          homeDoc.getElementById("title");
+
+        const state =
+          homeDoc.getElementById("lcd-play-state");
+
+        const current =
+          homeDoc.getElementById("cur");
+
+        const duration =
+          homeDoc.getElementById("dur");
+
+        const seek =
+          homeDoc.getElementById("seek");
+
+        const songName =
+          playlistDoc.getElementById("playing-title")
+            ?.textContent?.trim();
+
+        if (title && songName) {
+          title.textContent = songName;
+        }
+
+        if (state) {
+          state.textContent =
+            audio.paused ? "PAUSED" : "PLAYING";
+        }
+
+        if (current) {
+          current.textContent =
+            formatTime(audio.currentTime);
+        }
+
+        if (duration) {
+          duration.textContent =
+            formatTime(audio.duration);
+        }
+
+        if (
+          seek &&
+          Number.isFinite(audio.duration) &&
+          audio.duration > 0
+        ) {
+          seek.value =
+            (audio.currentTime / audio.duration) * 100;
+        }
+      }
+
+      function connectHomeControls() {
+        const doc = getDoc("home");
+
+        if (!doc) return;
+
+        const controls = [
+          ["mobile-play", "player-play"],
+          ["mobile-prev", "player-prev"],
+          ["mobile-next", "player-next"],
+          ["mobile-shuf", "player-shuffle"],
+          ["mobile-rep", "player-repeat"]
+        ];
+
+        controls.forEach(([homeId, playlistId]) => {
+          const button =
+            doc.getElementById(homeId);
+
+          if (!button) return;
+
+          button.addEventListener("click", event => {
+            if (activeAudioPage !== "playlist") {
+              return;
+            }
+
+            const target = getDoc("playlist")
+              ?.getElementById(playlistId);
+
+            if (!target) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            target.click();
+          }, true);
+        });
+
+        const seek = doc.getElementById("seek");
+
+        if (seek) {
+          seek.addEventListener("input", event => {
+            if (activeAudioPage !== "playlist") {
+              return;
+            }
+
+            const audio = getAudio("playlist");
+
+            if (
+              !audio ||
+              !Number.isFinite(audio.duration) ||
+              audio.duration <= 0
+            ) {
+              return;
+            }
+
+            event.stopImmediatePropagation();
+
+            audio.currentTime =
+              (Number(seek.value) / 100) *
+              audio.duration;
+          }, true);
+        }
+      }
+
+      homeFrame.addEventListener("load", () => {
+        handleNavigation("home");
+        connectHomeControls();
+      });
+
+      playlistFrame.addEventListener("load", () => {
+        handleNavigation("playlist");
+      });
+
+      window.addEventListener("message", event => {
+        if (event.origin !== location.origin) {
+          return;
+        }
+
+        if (
+          event.source !== homeFrame.contentWindow &&
+          event.source !== playlistFrame.contentWindow
+        ) {
+          return;
+        }
+
+        if (event.data?.type === "RAMPHONY_NAVIGATE") {
+          const page = event.data.page;
+
+          if (
+            page === "home" ||
+            page === "playlist"
+          ) {
+            showPage(page);
+          }
+        }
+      });
+
+      window.addEventListener("popstate", () => {
+        showPage(
+          location.hash === "#playlist"
+            ? "playlist"
+            : "home",
+          false
+        );
+      });
+
+      showPage(
+        location.hash === "#playlist"
+          ? "playlist"
+          : "home",
+        false
+      );
+
+      setInterval(syncLCD, 250);
+
+    })();
+  </script>
+
+</body>
+</html>
