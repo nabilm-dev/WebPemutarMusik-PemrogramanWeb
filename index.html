@@ -5,6 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Final Project - Pemrograman Web</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+/* Ramphony player — memakai variabel dari style.css (--green, --item, --text, dll.)
+   Semua selector di-scope ke .mp. Harus di-link SETELAH style.css. */
+.mp{
+  --panel:var(--item);
+  --line:#3a3a3a;
+  --mute:var(--text-muted);
+  --accent:var(--green);
+  --groove:#0b0b0b;
+  margin-top:18px;
+  display:grid;
+  grid-template-columns:minmax(0,320px) minmax(0,1fr);
+  gap:20px;
+  align-items:start;
+  color:var(--text);
+}
+.mp *{box-sizing:border-box}
+
+/* --- panel kiri: pemutar --- */
+.mp .player{background:var(--panel);border:0;border-radius:16px;padding:18px;margin:0;box-shadow:none;
+  display:flex;flex-direction:column;align-items:center;gap:14px}
+.mp .stage{position:relative;width:min(100%,300px);aspect-ratio:1}
+.mp canvas{position:absolute;inset:0;width:100%;height:100%}
+.mp .disc{position:absolute;inset:16.7%;border-radius:50%;
+  background:repeating-radial-gradient(circle,transparent 0 3px,rgba(255,255,255,.06) 3px 4px),radial-gradient(circle,var(--groove),#000);
+  box-shadow:0 10px 30px rgba(0,0,0,.5);animation:mp-spin 5s linear infinite;animation-play-state:paused;display:grid;place-items:center}
+.mp .disc.on{animation-play-state:running}
+.mp .disc i{position:relative;width:34%;aspect-ratio:1;border-radius:50%;background:var(--accent);display:grid;place-items:center;
+  font-style:normal;font-weight:800;color:var(--black);font-size:clamp(1rem,4vw,1.3rem)}
+.mp .disc i::after{content:"";position:absolute;width:15%;aspect-ratio:1;border-radius:50%;background:var(--groove)}
+@keyframes mp-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.mp .disc{animation:none}}
+
+.mp .meta{text-align:center;width:100%}
+.mp #title{font-size:1.2rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp #sub{color:var(--mute);font-size:.88rem}
+
+.mp .seek{display:flex;align-items:center;gap:10px;width:100%;font-size:.8rem;color:var(--mute);font-variant-numeric:tabular-nums}
+.mp input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:3px;border:0;margin:0;padding:0;
+  background:linear-gradient(to right,var(--accent) var(--p,0%),var(--line) var(--p,0%));outline-offset:4px}
+.mp input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--text);border:0}
+.mp input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--text);border:0}
+
+.mp .ctrl{display:flex;align-items:center;justify-content:center;gap:8px}
+.mp button{font:inherit;color:inherit;cursor:pointer;margin:0}
+.mp .ib{width:42px;height:42px;border-radius:50%;border:0;padding:0;background:transparent;display:grid;place-items:center;color:var(--text)}
+.mp .ib:hover{background:var(--line)}
+.mp .ib.act{color:var(--accent)}
+.mp .ib svg{width:22px;height:22px;fill:currentColor}
+.mp .play{width:60px;height:60px;background:var(--accent);color:var(--black)}
+.mp .play:hover{background:var(--green-light)}
+.mp .play svg{width:28px;height:28px}
+.mp :focus-visible{outline:2px solid var(--green-light);outline-offset:2px}
+
+.mp .vol{display:flex;align-items:center;gap:8px;width:70%;color:var(--mute)}
+.mp .vol svg{width:18px;height:18px;fill:currentColor}
+
+/* --- panel kanan: daftar putar --- */
+.mp .list{background:var(--panel);border:0;border-radius:16px;padding:16px;margin:0;box-shadow:none}
+.mp .head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.mp .head h2{margin:0;font-size:1.05rem;color:var(--text)}
+.mp .add{border:1px solid var(--line);background:transparent;border-radius:999px;padding:7px 16px;font-weight:600;color:var(--text);transition:border-color .2s,color .2s}
+.mp .add:hover{border-color:var(--green-light);color:var(--green-light)}
+.mp .add.main{background:var(--accent);color:var(--black);border-color:var(--accent)}
+.mp .add.main:hover{background:var(--green-light);color:var(--black)}
+
+.mp ul{list-style:none;margin:0;padding:0;max-height:400px;overflow-y:auto}
+/* reset gaya "ul li" milik style.css supaya item playlist tidak ikut kartu hijau */
+.mp li,.mp li:hover{background:none;border:0;border-radius:0;margin:0;padding:0;transform:none;color:inherit;transition:none}
+.mp li button{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:0;background:transparent;border-radius:10px;padding:10px 12px;color:var(--text)}
+.mp li button:hover{background:var(--line)}
+.mp li.cur button{background:var(--line)}
+.mp li .n{width:24px;color:var(--mute);font-variant-numeric:tabular-nums;text-align:center}
+.mp li.cur .n,.mp li.cur .t{color:var(--green-light)}
+.mp li .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mp li .s{font-size:.78rem;color:var(--mute)}
+.mp li.empty{color:var(--mute);padding:26px 8px;text-align:center;line-height:1.5}
+
+body.drop{outline:2px dashed var(--green);outline-offset:-10px}
+
+@media (max-width:820px){
+  .mp{grid-template-columns:minmax(0,1fr)}
+}
+
+    </style>
 </head>
 
 <body>
@@ -21,20 +106,54 @@
 
 <main>
     <section>
-        <h2>Welcome</h2>
-        <p>Halaman awal aplikasi web.</p>
+        <h2>COBA PUTAR LAGU</h2>
+        <p>Putar lagu dari perangkatmu, atau coba dua lagu demo.</p>
+
+        <!-- ===== MUSIC PLAYER ===== -->
+        <div class="mp">
+            <div class="player" role="region" aria-label="Pemutar">
+                <div class="stage">
+                    <canvas id="cv"></canvas>
+                    <div class="disc" id="disc"><i id="ini">♪</i></div>
+                </div>
+                <div class="meta">
+                    <div id="title">Belum ada lagu</div>
+                    <div id="sub">Tambahkan berkas audio untuk mulai</div>
+                </div>
+                <div class="seek">
+                    <span id="cur">0:00</span>
+                    <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Posisi lagu">
+                    <span id="dur">0:00</span>
+                </div>
+                <div class="ctrl">
+                    <button class="ib" id="shuf" aria-label="Acak" title="Acak"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4-1.6-1.2L12.8 6H17V3zM3 7h4.2l9 11H17v-3l4 4-4 4v-3h-1.8L6.2 9H3V7zm0 10h3.2l2-2.6 1.6 1.2L7.2 19H3v-2z"/></svg></button>
+                    <button class="ib" id="prev" aria-label="Sebelumnya" title="Sebelumnya"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12L18 18V6z"/></svg></button>
+                    <button class="ib play" id="play" aria-label="Putar" title="Putar / jeda (Spasi)"><svg width="28" height="28" viewBox="0 0 24 24" id="pi"><path d="M8 5v14l11-7z"/></svg></button>
+                    <button class="ib" id="next" aria-label="Berikutnya" title="Berikutnya"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+                    <button class="ib" id="rep" aria-label="Ulangi" title="Ulangi: mati"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+                </div>
+                <div class="vol">
+                    <svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8v8a4.5 4.5 0 002.5-4z"/></svg>
+                    <input type="range" id="vol" min="0" max="100" value="80" aria-label="Volume">
+                </div>
+            </div>
+
+            <div class="list" role="region" aria-label="Daftar putar">
+                <div class="head">
+                    <h2 id="count">Daftar putar</h2>
+                    <div>
+                        <button class="add" id="demo">Coba demo</button>
+                        <button class="add main" id="pick">Tambah lagu</button>
+                    </div>
+                </div>
+                <ul id="ul"></ul>
+                <input type="file" id="file" accept="audio/*" multiple hidden>
+            </div>
+        </div>
+        <audio id="a" preload="metadata"></audio>
+        <!-- ===== END MUSIC PLAYER ===== -->
     </section>
 </main>
-
-<h2>Apps Information</h2>
-<p>Aplikasi ini dikembangkan sebagai bagian dari praktikum Pemrograman Web.</p>
-<h3>Starter Feature</h3>
-
-<ul>
-    <li>Halaman utama</li>
-    <li>Struktur navigasi</li>
-    <li>Pengelolaan data</li>
-</ul>
 
 <p>
     Buka halaman
@@ -45,5 +164,135 @@
 <footer>
     <p>&copy; 2026 - Pemrograman Web</p>
 </footer>
+
+<script>
+const $=s=>document.querySelector(s), a=$('#a');
+let tracks=[], cur=-1, shuffle=false, repeat=0, ctx, an, buf;
+
+/* ---------- Lagu demo (disintesis di browser) ---------- */
+function wav(notes, step, sr=22050){
+  const n=Math.floor(notes.length*step*sr), b=new ArrayBuffer(44+n*2), v=new DataView(b);
+  const w=(o,s)=>[...s].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+  w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);
+  v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);
+  v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){
+    const k=Math.floor(i/(step*sr)), t=(i/sr)%step, f=440*Math.pow(2,(notes[k]-9)/12);
+    const env=Math.exp(-t*3)*Math.min(1,t*200);
+    const s=(Math.sin(2*Math.PI*f*i/sr)+.3*Math.sin(4*Math.PI*f*i/sr))*env*.4;
+    v.setInt16(44+i*2,Math.max(-1,Math.min(1,s))*32767,true);
+  }
+  return new Blob([b],{type:'audio/wav'});
+}
+const rep=(arr,n)=>Array.from({length:n},()=>arr).flat();
+function addDemo(){
+  const A=rep([0,4,7,12,7,4,0,4,2,5,9,14,9,5,2,5],3);
+  const B=rep([-3,0,4,0,-5,-1,2,-1,-7,-3,0,-3,-8,-5,-1,-5],2).map(x=>x-12);
+  add([{name:'Nada Pagi',src:URL.createObjectURL(wav(A,.25)),tag:'Demo'},
+       {name:'Hujan Jakarta',src:URL.createObjectURL(wav(B,.5)),tag:'Demo'}]);
+}
+
+/* ---------- Daftar putar ---------- */
+function add(items){
+  const first=tracks.length;
+  tracks.push(...items); render();
+  if(cur<0) load(first,false);
+}
+function render(){
+  const ul=$('#ul');
+  $('#count').textContent=tracks.length?`Daftar putar (${tracks.length})`:'Daftar putar';
+  if(!tracks.length){ul.innerHTML='<li class="empty">Belum ada lagu. Tekan <b>Tambah lagu</b>, atau seret berkas audio ke halaman ini.</li>';return}
+  ul.innerHTML='';
+  tracks.forEach((t,i)=>{
+    const li=document.createElement('li'); if(i===cur) li.className='cur';
+    li.innerHTML='<button><span class="n"></span><span class="t"></span><span class="s"></span></button>';
+    li.querySelector('.n').textContent=i===cur&&!a.paused?'▶':i+1;
+    li.querySelector('.t').textContent=t.name;
+    li.querySelector('.s').textContent=t.tag;
+    li.firstChild.onclick=()=>{i===cur?toggle():load(i,true)};
+    ul.appendChild(li);
+  });
+}
+function load(i,play){
+  cur=i; const t=tracks[i];
+  a.src=t.src; $('#title').textContent=t.name; $('#sub').textContent=t.tag==='Demo'?'Nada demo':'Dari perangkatmu';
+  $('#ini').textContent=t.name.trim()[0]?.toUpperCase()||'♪';
+  document.title=t.name+' – Putar'; render();
+  if(play) a.play().catch(()=>{});
+}
+function toggle(){
+  if(cur<0){tracks.length?load(0,true):$('#pick').click();return}
+  if(ctx&&ctx.state==='suspended') ctx.resume();
+  a.paused?a.play().catch(()=>{}):a.pause();
+}
+function step(d){
+  if(!tracks.length) return;
+  let i = shuffle&&tracks.length>1 ? (()=>{let r;do{r=Math.floor(Math.random()*tracks.length)}while(r===cur);return r})()
+        : (cur+d+tracks.length)%tracks.length;
+  load(i,true);
+}
+
+/* ---------- Kontrol ---------- */
+const fmt=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
+const fill=(el)=>el.style.setProperty('--p',(el.value-el.min)/(el.max-el.min)*100+'%');
+$('#play').onclick=toggle; $('#next').onclick=()=>step(1); $('#prev').onclick=()=>{a.currentTime>3?a.currentTime=0:step(-1)};
+$('#shuf').onclick=e=>{shuffle=!shuffle;e.currentTarget.classList.toggle('act',shuffle);e.currentTarget.title='Acak: '+(shuffle?'nyala':'mati')};
+$('#rep').onclick=e=>{repeat=(repeat+1)%3;const b=e.currentTarget;b.classList.toggle('act',repeat>0);b.title='Ulangi: '+['mati','semua','satu lagu'][repeat]};
+$('#pick').onclick=()=>$('#file').click();
+$('#demo').onclick=addDemo;
+$('#file').onchange=e=>{addFiles(e.target.files);e.target.value=''};
+function addFiles(fs){
+  const items=[...fs].filter(f=>f.type.startsWith('audio/')||/\.(mp3|m4a|wav|ogg|flac|aac)$/i.test(f.name))
+    .map(f=>({name:f.name.replace(/\.[^.]+$/,''),src:URL.createObjectURL(f),tag:'Berkas'}));
+  if(items.length) add(items);
+}
+const seek=$('#seek'), vol=$('#vol');
+seek.oninput=()=>{if(a.duration) a.currentTime=seek.value/1000*a.duration; fill(seek)};
+vol.oninput=()=>{a.volume=vol.value/100; fill(vol)};
+a.volume=.8; fill(vol); fill(seek);
+a.ontimeupdate=()=>{ if(a.duration&&document.activeElement!==seek){seek.value=a.currentTime/a.duration*1000;fill(seek)} $('#cur').textContent=fmt(a.currentTime)};
+a.onloadedmetadata=()=>{$('#dur').textContent=fmt(a.duration)};
+a.onplay=()=>{
+  if(!ctx){try{ctx=new (window.AudioContext||window.webkitAudioContext)();const s=ctx.createMediaElementSource(a);an=ctx.createAnalyser();an.fftSize=256;s.connect(an);an.connect(ctx.destination);buf=new Uint8Array(an.frequencyBinCount)}catch(e){}}
+  if(ctx&&ctx.state==='suspended') ctx.resume();
+  state(true);
+};
+a.onpause=()=>state(false);
+a.onended=()=>{ if(repeat===2){a.currentTime=0;a.play()} else if(repeat===1||cur<tracks.length-1){step(1)} else {state(false)} };
+function state(on){
+  $('#disc').classList.toggle('on',on);
+  $('#pi').innerHTML=on?'<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';
+  $('#play').setAttribute('aria-label',on?'Jeda':'Putar'); render();
+}
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON') return;
+  if(e.code==='Space'){e.preventDefault();toggle()}
+  if(e.code==='ArrowRight') a.currentTime+=5;
+  if(e.code==='ArrowLeft') a.currentTime-=5;
+});
+addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drop')});
+addEventListener('dragleave',()=>document.body.classList.remove('drop'));
+addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drop');addFiles(e.dataTransfer.files)});
+
+/* ---------- Visualizer ---------- */
+const cv=$('#cv'), g=cv.getContext('2d'); let W=0;
+function size(){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;W=r.width;cv.width=r.width*d;cv.height=r.width*d;g.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',size); size();
+function draw(){
+  requestAnimationFrame(draw);
+  g.clearRect(0,0,W,W);
+  const c=W/2, R=W*.37, N=72, acc=getComputedStyle(cv).getPropertyValue('--accent').trim()||'#1db954';
+  if(an&&!a.paused) an.getByteFrequencyData(buf);
+  g.strokeStyle=acc; g.lineCap='round'; g.lineWidth=Math.max(2,W*.011);
+  for(let i=0;i<N;i++){
+    const v=(an&&!a.paused)?buf[Math.floor(i/N*buf.length*.7)]/255:0, len=W*.02+v*W*.12, ang=i/N*Math.PI*2-Math.PI/2;
+    g.globalAlpha=.35+v*.65; g.beginPath();
+    g.moveTo(c+Math.cos(ang)*R,c+Math.sin(ang)*R); g.lineTo(c+Math.cos(ang)*(R+len),c+Math.sin(ang)*(R+len)); g.stroke();
+  }
+  g.globalAlpha=1;
+}
+draw(); render();
+
+</script>
 </body>
 </html>
