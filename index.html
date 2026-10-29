@@ -1,606 +1,586 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ramphony - Offline Music Player</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ramphony - Offline Music Player</title>
 
-  <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="stylesheet" href="assets/css/tutorial.css">
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/css/tutorial.css" />
 
-  <style>
-    /* ===== LCD LEBIH TINGGI ===== */
+    <style>
+      /* ===== LCD LEBIH TINGGI ===== */
 
-    .lcd-display {
-      min-height: 340px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .lcd-bottom {
-      margin-top: auto;
-      padding-top: 28px;
-    }
-
-    /* ===== CONTROL BAR DUA BARIS ===== */
-
-    .mobile-controls {
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      width: 100%;
-      max-width: 440px;
-      margin: 22px auto 0;
-      padding: 17px 16px;
-      background: #2b2b2b;
-      border-radius: 28px;
-    }
-
-    .control-main,
-    .control-secondary {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-    }
-
-    .control-main {
-      gap: 38px;
-    }
-
-    .control-secondary {
-      gap: 42px;
-    }
-
-    .mobile-controls .control-btn {
-      width: 38px;
-      height: 38px;
-      flex-shrink: 0;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      padding: 5px;
-      background: transparent;
-      border: none;
-      border-radius: 50%;
-      color: white;
-      cursor: pointer;
-    }
-
-    .mobile-controls .control-btn svg {
-      width: 21px;
-      height: 21px;
-      fill: currentColor;
-    }
-
-    .mobile-controls .control-btn.primary {
-      width: 68px;
-      height: 68px;
-      padding: 0;
-      background: #b5e4bf;
-      color: #071b12;
-    }
-
-    .mobile-controls .control-btn.primary svg {
-      width: 27px;
-      height: 27px;
-    }
-
-    .mobile-controls .control-btn.primary:hover {
-      background: #c9f0d1;
-    }
-
-    .mobile-controls .control-btn.act,
-    #mobile-lyrics {
-      color: #b5e4bf;
-    }
-
-    /* ===== LYRICS POPUP ===== */
-
-    .lyrics-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      background: rgba(0, 0, 0, .82);
-    }
-
-    .lyrics-overlay.active {
-      display: flex;
-    }
-
-    .lyrics-popup {
-      width: min(600px, 100%);
-      height: min(660px, 90vh);
-      overflow: hidden;
-      background: #202020;
-      border: 1px solid #b5e4bf;
-      border-radius: 16px;
-      box-shadow: 0 25px 70px rgba(0, 0, 0, .5);
-    }
-
-    .lyrics-popup iframe {
-      width: 100%;
-      height: 100%;
-      display: block;
-      border: 0;
-    }
-
-    body.lyrics-modal-open {
-      overflow: hidden;
-    }
-
-    /* ===== RESPONSIVE ===== */
-
-    @media (max-width: 820px) {
       .lcd-display {
-        min-height: 270px;
+        min-height: 340px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
       }
+
+      .lcd-bottom {
+        margin-top: auto;
+        padding-top: 28px;
+      }
+
+      /* ===== CONTROL BAR DUA BARIS ===== */
 
       .mobile-controls {
-        max-width: 400px;
-        gap: 12px;
-        padding: 14px 10px;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        width: 100%;
+        max-width: 440px;
+        margin: 22px auto 0;
+        padding: 17px 16px;
+        background: #2b2b2b;
+        border-radius: 28px;
       }
-    }
 
-    @media (max-width: 480px) {
-      .lcd-display {
-        min-height: 250px;
-      }
-
-      .mobile-controls {
-        max-width: 100%;
+      .control-main,
+      .control-secondary {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
       }
 
       .control-main {
-        gap: 27px;
+        gap: 38px;
       }
 
       .control-secondary {
-        gap: 35px;
+        gap: 42px;
+      }
+
+      .mobile-controls .control-btn {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        padding: 5px;
+        background: transparent;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+      }
+
+      .mobile-controls .control-btn svg {
+        width: 21px;
+        height: 21px;
+        fill: currentColor;
       }
 
       .mobile-controls .control-btn.primary {
-        width: 60px;
-        height: 60px;
+        width: 68px;
+        height: 68px;
+        padding: 0;
+        background: #b5e4bf;
+        color: #071b12;
       }
-    }
-  </style>
-</head>
 
-<body>
-<div class="app">
+      .mobile-controls .control-btn.primary svg {
+        width: 27px;
+        height: 27px;
+      }
 
-  <!-- ===== HAMBURGER ===== -->
-  <button
-    id="menu-toggle"
-    class="menu-toggle"
-    type="button"
-    aria-label="Buka menu"
-    aria-expanded="false"
-  >
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
+      .mobile-controls .control-btn.primary:hover {
+        background: #c9f0d1;
+      }
 
-  <!-- ===== SIDEBAR OVERLAY ===== -->
-  <div id="menu-overlay" class="menu-overlay"></div>
+      .mobile-controls .control-btn.act,
+      #mobile-lyrics {
+        color: #b5e4bf;
+      }
 
-  <!-- ===== SIDEBAR ===== -->
-  <aside id="sidebar" class="sidebar">
-    <a href="index.html" class="logo">♫ Ramphony</a>
+      /* ===== LYRICS POPUP ===== */
 
-    <nav class="side-nav">
-      <p class="nav-heading">MENU UTAMA</p>
+      .lyrics-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.82);
+      }
 
-      <a href="#" class="nav-link active" data-page="home">
-        <span>⌂</span> Home
-      </a>
+      .lyrics-overlay.active {
+        display: flex;
+      }
 
-      <p class="nav-heading">YOUR LIBRARY</p>
+      .lyrics-popup {
+        width: min(600px, 100%);
+        height: min(660px, 90vh);
+        overflow: hidden;
+        background: #202020;
+        border: 1px solid #b5e4bf;
+        border-radius: 16px;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+      }
 
-      <a href="#" class="nav-link" data-page="playlist">
-        <span>♫</span> My Playlist
-      </a>
+      .lyrics-popup iframe {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border: 0;
+      }
 
-      <a href="#" class="nav-link" data-page="favorites">
-        <span>♡</span> Favorites
-      </a>
+      body.lyrics-modal-open {
+        overflow: hidden;
+      }
 
-      <a href="#" class="nav-link" data-page="history">
-        <span>◷</span> Recently Played
-      </a>
+      /* ===== RESPONSIVE ===== */
 
-      <p class="nav-heading">LAINNYA</p>
+      @media (max-width: 820px) {
+        .lcd-display {
+          min-height: 270px;
+        }
 
-      <a href="#" class="nav-link" data-page="settings">
-        <span>⚙</span> Settings
-      </a>
-    </nav>
+        .mobile-controls {
+          max-width: 400px;
+          gap: 12px;
+          padding: 14px 10px;
+        }
+      }
 
-    <div class="sidebar-account">
-      <span>◉</span>
-      <span>Guest</span>
-      <a href="pages/form-data.html">Create Profile</a>
-    </div>
+      @media (max-width: 480px) {
+        .lcd-display {
+          min-height: 250px;
+        }
 
-    <p class="copyright">© Ramphony Offline Player</p>
-  </aside>
+        .mobile-controls {
+          max-width: 100%;
+        }
 
-  <!-- ===== MAIN CONTENT ===== -->
-  <main class="main-content">
+        .control-main {
+          gap: 27px;
+        }
 
-    <!-- HEADER -->
-    <header class="topbar">
-      <a href="index.html" class="mobile-logo logo">Ramphony</a>
+        .control-secondary {
+          gap: 35px;
+        }
 
-      <a href="index.html" class="topbar-label">
-        OFFLINE MUSIC PLAYER
-      </a>
+        .mobile-controls .control-btn.primary {
+          width: 60px;
+          height: 60px;
+        }
+      }
+    </style>
+  </head>
 
-      <a
-        href="pages/form-data.html"
-        class="profile-button"
-        title="Create Profile"
-        aria-label="Create Profile"
+  <body>
+    <div class="app">
+      <!-- ===== HAMBURGER ===== -->
+      <button
+        id="menu-toggle"
+        class="menu-toggle"
+        type="button"
+        aria-label="Buka menu"
+        aria-expanded="false"
       >
-        <svg width="25" height="25" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="1.8">
-          <circle cx="12" cy="8" r="4"></circle>
-          <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
-        </svg>
-      </a>
-    </header>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
 
-    <!-- ===== WORKSPACE ===== -->
-    <div class="workspace">
+      <!-- ===== SIDEBAR OVERLAY ===== -->
+      <div id="menu-overlay" class="menu-overlay"></div>
 
-      <!-- ===== PLAYER PANEL ===== -->
-      <section class="player-panel">
+      <!-- ===== SIDEBAR ===== -->
+      <aside id="sidebar" class="sidebar">
+        <a href="index.html" class="logo">♫ Ramphony</a>
 
-        <div class="lcd-frame">
-          <div class="lcd-screen">
+        <nav class="side-nav">
+          <p class="nav-heading">MENU UTAMA</p>
 
-            <!-- LCD HEADER -->
-            <div class="lcd-status">
-              <span class="music-note">♫ RAMPHONY</span>
+          <a href="#" class="nav-link active" data-page="home">
+            <span>⌂</span> Home
+          </a>
 
-              <div class="lcd-tags">
-                <span class="lcd-tag">MP3</span>
-                <span class="lcd-tag">PLAYER</span>
-              </div>
-            </div>
+          <p class="nav-heading">YOUR LIBRARY</p>
 
-            <!-- LCD CONTENT -->
-            <div class="lcd-display">
+          <a href="#" class="nav-link" data-page="playlist">
+            <span>♫</span> My Playlist
+          </a>
 
-              <div class="lcd-title-wrap">
-                <p>NOW PLAYING</p>
+          <a href="#" class="nav-link" data-page="favorites">
+            <span>♡</span> Favorites
+          </a>
 
-                <h1 id="title" class="lcd-title">
-                  NO TRACK SELECTED
-                </h1>
-              </div>
+          <a href="#" class="nav-link" data-page="history">
+            <span>◷</span> Recently Played
+          </a>
 
-              <!-- PROGRESS -->
-              <div class="lcd-progress">
-                <span id="cur">0:00</span>
+          <p class="nav-heading">LAINNYA</p>
 
-                <input
-                  id="seek"
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value="0"
-                  aria-label="Progress lagu"
-                >
+          <a href="#" class="nav-link" data-page="settings">
+            <span>⚙</span> Settings
+          </a>
+        </nav>
 
-                <span id="dur">0:00</span>
-              </div>
-
-              <!-- LCD BOTTOM -->
-              <div class="lcd-bottom">
-                <div class="lcd-info">
-                  <span id="lcd-play-state">PAUSED</span>
-                </div>
-
-                <div id="visualizer" class="visualizer">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-
-            </div>
-          </div>
+        <div class="sidebar-account">
+          <span>◉</span>
+          <span>Guest</span>
+          <a href="pages/profile.html">Create Profile</a>
         </div>
 
-        <!-- ===== CONTROLS DUA BARIS ===== -->
-        <div class="mobile-controls">
+        <p class="copyright">© Ramphony Offline Player</p>
+      </aside>
 
-          <!-- ATAS -->
-          <div class="control-main">
-            <button
-              id="mobile-prev"
-              class="control-btn"
-              type="button"
-              title="Previous"
-              aria-label="Lagu sebelumnya"
-            ></button>
+      <!-- ===== MAIN CONTENT ===== -->
+      <main class="main-content">
+        <!-- HEADER -->
+        <header class="topbar">
+          <a href="index.html" class="mobile-logo logo">Ramphony</a>
 
-            <button
-              id="mobile-play"
-              class="control-btn primary"
-              type="button"
-              title="Play / Pause"
-              aria-label="Putar lagu"
-            ></button>
+          <a href="index.html" class="topbar-label"> OFFLINE MUSIC PLAYER </a>
 
-            <button
-              id="mobile-next"
-              class="control-btn"
-              type="button"
-              title="Next"
-              aria-label="Lagu berikutnya"
-            ></button>
-          </div>
-
-          <!-- BAWAH -->
-          <div class="control-secondary">
-            <button
-              id="mobile-shuf"
-              class="control-btn"
-              type="button"
-              title="Shuffle"
-              aria-label="Acak lagu"
-            ></button>
-
-            <button
-              id="mobile-rep"
-              class="control-btn"
-              type="button"
-              title="Repeat"
-              aria-label="Ulangi lagu"
-            ></button>
-
-            <button
-              id="mobile-lyrics"
-              class="control-btn"
-              type="button"
-              title="Lyrics"
-              aria-label="Buka lirik lagu"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="currentColor"
-                  d="M4 5h16v2H4zm0 5h11v2H4zm0 5h11v2H4zm14-4v7.2a2.8 2.8 0 1 1-2-2.68V9h5v2z"/>
-              </svg>
-            </button>
-          </div>
-
-        </div>
-
-      </section>
-
-      <!-- ===== PLAYLIST PANEL ===== -->
-      <section class="playlist-panel" id="playlist">
-
-        <div class="playlist-header">
-          <div>
-            <h2 id="library-title">Your Playlist</h2>
-            <p id="count">Daftar putar</p>
-          </div>
-
-          <div class="playlist-actions">
-            <button id="demo" class="btn-demo" type="button">
-              ♫ Demo
-            </button>
-
-            <button id="pick" class="btn-add" type="button">
-              + Tambah Lagu
-            </button>
-          </div>
-        </div>
-
-        <!-- SEARCH -->
-        <div class="playlist-search">
-          <svg width="20" height="20" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7"></circle>
-            <path d="m16 16 5 5"></path>
-          </svg>
-
-          <input
-            id="search-track"
-            type="search"
-            placeholder="Cari lagu..."
-            aria-label="Cari lagu"
+          <a
+            href="pages/profile.html"
+            class="profile-button"
+            title="My Profile"
+            aria-label="My Profile"
           >
+            <svg
+              width="25"
+              height="25"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
+            </svg>
+          </a>
+        </header>
+
+        <!-- ===== WORKSPACE ===== -->
+        <div class="workspace">
+          <!-- ===== PLAYER PANEL ===== -->
+          <section class="player-panel">
+            <div class="lcd-frame">
+              <div class="lcd-screen">
+                <!-- LCD HEADER -->
+                <div class="lcd-status">
+                  <span class="music-note">♫ RAMPHONY</span>
+
+                  <div class="lcd-tags">
+                    <span class="lcd-tag">MP3</span>
+                    <span class="lcd-tag">PLAYER</span>
+                  </div>
+                </div>
+
+                <!-- LCD CONTENT -->
+                <div class="lcd-display">
+                  <div class="lcd-title-wrap">
+                    <p>NOW PLAYING</p>
+
+                    <h1 id="title" class="lcd-title">NO TRACK SELECTED</h1>
+                  </div>
+
+                  <!-- PROGRESS -->
+                  <div class="lcd-progress">
+                    <span id="cur">0:00</span>
+
+                    <input
+                      id="seek"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value="0"
+                      aria-label="Progress lagu"
+                    />
+
+                    <span id="dur">0:00</span>
+                  </div>
+
+                  <!-- LCD BOTTOM -->
+                  <div class="lcd-bottom">
+                    <div class="lcd-info">
+                      <span id="lcd-play-state">PAUSED</span>
+                    </div>
+
+                    <div id="visualizer" class="visualizer">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ===== CONTROLS DUA BARIS ===== -->
+            <div class="mobile-controls">
+              <!-- ATAS -->
+              <div class="control-main">
+                <button
+                  id="mobile-prev"
+                  class="control-btn"
+                  type="button"
+                  title="Previous"
+                  aria-label="Lagu sebelumnya"
+                ></button>
+
+                <button
+                  id="mobile-play"
+                  class="control-btn primary"
+                  type="button"
+                  title="Play / Pause"
+                  aria-label="Putar lagu"
+                ></button>
+
+                <button
+                  id="mobile-next"
+                  class="control-btn"
+                  type="button"
+                  title="Next"
+                  aria-label="Lagu berikutnya"
+                ></button>
+              </div>
+
+              <!-- BAWAH -->
+              <div class="control-secondary">
+                <button
+                  id="mobile-shuf"
+                  class="control-btn"
+                  type="button"
+                  title="Shuffle"
+                  aria-label="Acak lagu"
+                ></button>
+
+                <button
+                  id="mobile-rep"
+                  class="control-btn"
+                  type="button"
+                  title="Repeat"
+                  aria-label="Ulangi lagu"
+                ></button>
+
+                <button
+                  id="mobile-lyrics"
+                  class="control-btn"
+                  type="button"
+                  title="Lyrics"
+                  aria-label="Buka lirik lagu"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M4 5h16v2H4zm0 5h11v2H4zm0 5h11v2H4zm14-4v7.2a2.8 2.8 0 1 1-2-2.68V9h5v2z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== PLAYLIST PANEL ===== -->
+          <section class="playlist-panel" id="playlist">
+            <div class="playlist-header">
+              <div>
+                <h2 id="library-title">Your Playlist</h2>
+                <p id="count">Daftar putar</p>
+              </div>
+
+              <div class="playlist-actions">
+                <button id="demo" class="btn-demo" type="button">♫ Demo</button>
+
+                <button id="pick" class="btn-add" type="button">
+                  + Tambah Lagu
+                </button>
+              </div>
+            </div>
+
+            <!-- SEARCH -->
+            <div class="playlist-search">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m16 16 5 5"></path>
+              </svg>
+
+              <input
+                id="search-track"
+                type="search"
+                placeholder="Cari lagu..."
+                aria-label="Cari lagu"
+              />
+            </div>
+
+            <!-- SONG LIST -->
+            <ul id="ul" class="track-list"></ul>
+
+            <div id="library-empty" class="library-empty" hidden>
+              Belum ada lagu.
+            </div>
+
+            <div class="drop-zone">
+              Tarik file MP3 ke sini atau klik Tambah Lagu.
+            </div>
+
+            <input
+              id="file"
+              type="file"
+              accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac"
+              multiple
+              hidden
+            />
+          </section>
         </div>
 
-        <!-- SONG LIST -->
-        <ul id="ul" class="track-list"></ul>
+        <!-- ===== ADDITIONAL VIEWS ===== -->
+        <section id="favorites-view" class="library-view" hidden>
+          <h2>Favorites</h2>
+          <p>Belum ada lagu favorit.</p>
+        </section>
 
-        <div id="library-empty" class="library-empty" hidden>
-          Belum ada lagu.
-        </div>
+        <section id="history-view" class="library-view" hidden>
+          <h2>Recently Played</h2>
+          <p>Belum ada riwayat pemutaran.</p>
+        </section>
 
-        <div class="drop-zone">
-          Tarik file MP3 ke sini atau klik Tambah Lagu.
-        </div>
-
-        <input
-          id="file"
-          type="file"
-          accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac"
-          multiple
-          hidden
-        >
-      </section>
-
+        <section id="settings-view" class="library-view" hidden>
+          <h2>Settings</h2>
+          <p>Pengaturan Ramphony.</p>
+        </section>
+      </main>
     </div>
 
-    <!-- ===== ADDITIONAL VIEWS ===== -->
-    <section id="favorites-view" class="library-view" hidden>
-      <h2>Favorites</h2>
-      <p>Belum ada lagu favorit.</p>
-    </section>
+    <!-- ===== HIDDEN PLAYER COMPATIBILITY ===== -->
+    <div class="bottom-player">
+      <span id="ini">♪</span>
+      <span id="bottom-title">No track selected</span>
+      <span id="sub">Offline player</span>
 
-    <section id="history-view" class="library-view" hidden>
-      <h2>Recently Played</h2>
-      <p>Belum ada riwayat pemutaran.</p>
-    </section>
+      <button id="shuf" type="button"></button>
+      <button id="prev" type="button"></button>
+      <button id="play" type="button"></button>
+      <button id="next" type="button"></button>
+      <button id="rep" type="button"></button>
 
-    <section id="settings-view" class="library-view" hidden>
-      <h2>Settings</h2>
-      <p>Pengaturan Ramphony.</p>
-    </section>
+      <span id="bottom-cur">0:00</span>
 
-  </main>
+      <input id="bottom-progress" type="range" min="0" max="100" value="0" />
 
-</div>
+      <span id="bottom-dur">0:00</span>
 
-<!-- ===== HIDDEN PLAYER COMPATIBILITY ===== -->
-<div class="bottom-player">
-  <span id="ini">♪</span>
-  <span id="bottom-title">No track selected</span>
-  <span id="sub">Offline player</span>
+      <input id="vol" type="range" min="0" max="100" value="80" />
 
-  <button id="shuf" type="button"></button>
-  <button id="prev" type="button"></button>
-  <button id="play" type="button"></button>
-  <button id="next" type="button"></button>
-  <button id="rep" type="button"></button>
+      <span id="volume-number">80</span>
+    </div>
 
-  <span id="bottom-cur">0:00</span>
+    <!-- ===== AUDIO ===== -->
+    <audio id="a" preload="metadata"></audio>
 
-  <input
-    id="bottom-progress"
-    type="range"
-    min="0"
-    max="100"
-    value="0"
-  >
+    <!-- ===== LYRICS POPUP ===== -->
+    <div id="lyrics-overlay" class="lyrics-overlay">
+      <div
+        class="lyrics-popup"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ramphony Lyrics"
+      >
+        <iframe
+          id="lyrics-frame"
+          src="pages/lyrics.html"
+          title="Ramphony Lyrics"
+        ></iframe>
+      </div>
+    </div>
 
-  <span id="bottom-dur">0:00</span>
+    <!-- ===== MAIN PLAYER JS ===== -->
+    <script src="assets/js/player.js"></script>
 
-  <input
-    id="vol"
-    type="range"
-    min="0"
-    max="100"
-    value="80"
-  >
+    <!-- ===== LYRICS POPUP JS ===== -->
+    <script>
+      const lyricsButton = document.querySelector("#mobile-lyrics");
+      const lyricsOverlay = document.querySelector("#lyrics-overlay");
+      const lyricsFrame = document.querySelector("#lyrics-frame");
 
-  <span id="volume-number">80</span>
-</div>
+      function sendLyricsSong() {
+        const title = document.querySelector("#title");
+        const audio = document.querySelector("#a");
 
-<!-- ===== AUDIO ===== -->
-<audio id="a" preload="metadata"></audio>
+        const song = title?.textContent.trim() || "";
+        const hasAudio = Boolean(audio?.getAttribute("src"));
 
-<!-- ===== LYRICS POPUP ===== -->
-<div id="lyrics-overlay" class="lyrics-overlay">
-  <div
-    class="lyrics-popup"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Ramphony Lyrics"
-  >
-    <iframe
-      id="lyrics-frame"
-      src="pages/lyrics.html"
-      title="Ramphony Lyrics"
-    ></iframe>
-  </div>
-</div>
+        lyricsFrame.contentWindow?.postMessage(
+          {
+            type: "RAMPHONY_SONG",
+            song: hasAudio ? song : "",
+            audioUrl: hasAudio ? audio.src : "",
+          },
+          window.location.origin,
+        );
+      }
 
-<!-- ===== MAIN PLAYER JS ===== -->
-<script src="assets/js/player.js"></script>
+      function openLyricsPopup() {
+        lyricsOverlay.classList.add("active");
+        document.body.classList.add("lyrics-modal-open");
+        sendLyricsSong();
+      }
 
-<!-- ===== LYRICS POPUP JS ===== -->
-<script>
-  const lyricsButton = document.querySelector("#mobile-lyrics");
-  const lyricsOverlay = document.querySelector("#lyrics-overlay");
-  const lyricsFrame = document.querySelector("#lyrics-frame");
+      function closeLyricsPopup() {
+        lyricsOverlay.classList.remove("active");
+        document.body.classList.remove("lyrics-modal-open");
+      }
 
-  function sendLyricsSong() {
-    const title = document.querySelector("#title");
-    const audio = document.querySelector("#a");
+      lyricsButton.addEventListener("click", openLyricsPopup);
 
-    const song = title?.textContent.trim() || "";
-    const hasAudio = Boolean(audio?.getAttribute("src"));
+      lyricsOverlay.addEventListener("click", (event) => {
+        if (event.target === lyricsOverlay) {
+          closeLyricsPopup();
+        }
+      });
 
-    lyricsFrame.contentWindow?.postMessage(
-      {
-        type: "RAMPHONY_SONG",
-        song: hasAudio ? song : "",
-        audioUrl: hasAudio ? audio.src : ""
-      },
-      window.location.origin
-    );
-  }
+      lyricsFrame.addEventListener("load", sendLyricsSong);
 
-  function openLyricsPopup() {
-    lyricsOverlay.classList.add("active");
-    document.body.classList.add("lyrics-modal-open");
-    sendLyricsSong();
-  }
+      window.addEventListener("message", (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.source !== lyricsFrame.contentWindow) return;
 
-  function closeLyricsPopup() {
-    lyricsOverlay.classList.remove("active");
-    document.body.classList.remove("lyrics-modal-open");
-  }
+        if (event.data?.type === "RAMPHONY_CLOSE_LYRICS") {
+          closeLyricsPopup();
+        }
 
-  lyricsButton.addEventListener("click", openLyricsPopup);
+        if (event.data?.type === "RAMPHONY_LYRICS_READY") {
+          sendLyricsSong();
+        }
+      });
 
-  lyricsOverlay.addEventListener("click", event => {
-    if (event.target === lyricsOverlay) {
-      closeLyricsPopup();
-    }
-  });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeLyricsPopup();
+        }
+      });
+    </script>
 
-  lyricsFrame.addEventListener("load", sendLyricsSong);
-
-  window.addEventListener("message", event => {
-    if (event.origin !== window.location.origin) return;
-    if (event.source !== lyricsFrame.contentWindow) return;
-
-    if (event.data?.type === "RAMPHONY_CLOSE_LYRICS") {
-      closeLyricsPopup();
-    }
-
-    if (event.data?.type === "RAMPHONY_LYRICS_READY") {
-      sendLyricsSong();
-    }
-  });
-
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-      closeLyricsPopup();
-    }
-  });
-</script>
-
-<script src="assets/js/tutorial.js"></script>
-
-</body>
+    <script src="assets/js/tutorial.js"></script>
+  </body>
 </html>

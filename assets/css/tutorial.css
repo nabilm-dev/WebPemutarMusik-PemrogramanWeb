@@ -349,3 +349,73 @@ body.tutorial-open {
     transition: none;
   }
 }
+
+
+/* ===== TUTORIAL NAVIGATION TABS ===== */
+
+.tutorial-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.tutorial-tab {
+  min-width: 0;
+  padding: 10px 8px;
+  border: 1px solid #484848;
+  border-radius: 10px;
+  background: #303030;
+  color: #dddddd;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.tutorial-tab:hover {
+  border-color: #b5e4bf;
+}
+
+.tutorial-tab.active {
+  background: #b5e4bf;
+  border-color: #b5e4bf;
+  color: #071b12;
+}
+
+.tutorial-tab:focus-visible {
+  outline: 2px solid #b5e4bf;
+  outline-offset: 3px;
+}
+
+.tutorial-illustration {
+  width: 100%;
+  height: 220px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.tutorial-gif {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+}
+
+@media (max-width: 480px) {
+  .tutorial-illustration {
+    height: 170px;
+  }
+
+  .tutorial-tabs {
+    gap: 5px;
+  }
+
+  .tutorial-tab {
+    padding: 9px 4px;
+    font-size: 11px;
+  }
+}

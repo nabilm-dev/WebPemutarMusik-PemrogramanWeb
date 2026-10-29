@@ -1167,3 +1167,23 @@ body.drop {
     min-height: 230px;
   }
 }
+
+
+/* ===== FIX HAMBURGER NUTUPIN LOGO ===== */
+
+@media (max-width: 820px) {
+  .menu-toggle {
+    position: fixed;
+    top: 18px;
+    left: 10px;
+    z-index: 1001;
+  }
+
+  .topbar {
+    padding-left: 80px !important;
+  }
+
+  .mobile-logo {
+    margin-left: 0 !important;
+  }
+}

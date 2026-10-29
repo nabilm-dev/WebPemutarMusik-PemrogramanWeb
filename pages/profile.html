@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Ramphony</title>
+  <link rel="stylesheet" href="../assets/css/profile.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <header class="topbar">
+      <a href="../index.html" class="logo">♫ Ramphony</a>
+      <a href="../index.html" class="back-btn">← Back to Player</a>
+    </header>
+
+    <main class="container">
+
+      <section class="profile-hero">
+        <div class="profile-avatar" id="avatar">R</div>
+
+        <div class="profile-info">
+          <span class="eyebrow">YOUR MUSIC IDENTITY</span>
+          <h1 id="display-name">Ramphony Listener</h1>
+          <p class="username" id="username">@guest</p>
+          <p class="bio" id="bio">
+            Your music story starts here...
+          </p>
+
+          <div class="profile-bottom">
+            <span class="artist">
+              ♫ Favorite Artist:
+              <strong id="artist">Not set yet</strong>
+            </span>
+
+            <a href="form-data.html" class="edit-btn">
+              ✎ Edit Profile
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats">
+        <div class="stat-card">
+          <strong id="total-songs">0</strong>
+          <span>Total Songs</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="total-playlists">0</strong>
+          <span>Playlists</span>
+        </div>
+
+        <div class="stat-card">
+          <strong>—</strong>
+          <span>Favorites</span>
+        </div>
+      </section>
+
+      <section class="collection">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">YOUR LIBRARY</span>
+            <h2>My Music Collection<span>.</span></h2>
+            <p>Koleksi musik yang tersimpan di browser ini.</p>
+          </div>
+
+          <a href="../index.html" class="player-link">
+            Open Player →
+          </a>
+        </div>
+
+        <div class="playlist-grid" id="playlist-grid">
+          <p class="loading">Memuat koleksi musik...</p>
+        </div>
+      </section>
+
+      <p class="storage-note">
+        ♧ Lagu disimpan secara lokal di browser.
+        Menghapus data situs dapat menghapus koleksi musik.
+      </p>
+
+    </main>
+
+    <footer>
+      © 2026 Ramphony · Your music, your space.
+    </footer>
+
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const PROFILE_KEY = "ramphony_profile";
+      const GROUP_KEY = "ramphony_folder_groups_v1";
+      const DB_NAME = "ramphony-music-v1";
+      const STORE_NAME = "songs";
+
+      const grid = document.getElementById("playlist-grid");
+
+      const demoSongs = [
+        "Rex Orange County - Best Friend",
+        "Rex Orange County - Hannah Montana"
+      ];
+
+      /* ===== PROFILE ===== */
+
+      function loadProfile() {
+        try {
+          const saved = localStorage.getItem(PROFILE_KEY);
+          if (!saved) return;
+
+          const profile = JSON.parse(saved);
+
+          const name =
+            profile.displayName ||
+            profile.username ||
+            "Ramphony Listener";
+
+          document.getElementById("display-name").textContent = name;
+          document.getElementById("username").textContent =
+            "@" + (profile.username || "guest");
+
+          document.getElementById("avatar").textContent =
+            name.charAt(0).toUpperCase();
+
+          document.getElementById("artist").textContent =
+            profile.favoriteArtist || "Not set yet";
+
+          document.getElementById("bio").textContent =
+            profile.bio || "Your music story starts here...";
+
+        } catch (error) {
+          console.warn("Profil tidak dapat dibaca:", error);
+        }
+      }
+
+      /* ===== INDEXEDDB ===== */
+
+      function getSavedSongs() {
+        return new Promise((resolve, reject) => {
+          if (!("indexedDB" in window)) {
+            reject(new Error("IndexedDB tidak didukung"));
+            return;
+          }
+
+          const request = indexedDB.open(DB_NAME, 1);
+
+          request.onerror = () => reject(request.error);
+
+          request.onupgradeneeded = () => {
+            const db = request.result;
+
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME, {
+                keyPath: "id"
+              });
+            }
+          };
+
+          request.onsuccess = () => {
+            const db = request.result;
+
+            const transaction = db.transaction(
+              STORE_NAME,
+              "readonly"
+            );
+
+            const store = transaction.objectStore(STORE_NAME);
+            const songsRequest = store.getAll();
+
+            songsRequest.onsuccess = () => {
+              resolve(songsRequest.result || []);
+            };
+
+            songsRequest.onerror = () => {
+              reject(songsRequest.error);
+            };
+
+            transaction.oncomplete = () => db.close();
+          };
+        });
+      }
+
+      /* ===== FOLDER GROUPS ===== */
+
+      function getGroups() {
+        try {
+          const saved = JSON.parse(
+            localStorage.getItem(GROUP_KEY) || "[]"
+          );
+
+          return Array.isArray(saved) ? saved : [];
+        } catch {
+          return [];
+        }
+      }
+
+      /* ===== PLAYLIST CARD ===== */
+
+      function createPlaylistCard(name, songs, icon, description) {
+        const card = document.createElement("article");
+        card.className = "playlist-card";
+
+        const heading = document.createElement("div");
+        heading.className = "playlist-card-heading";
+
+        const iconElement = document.createElement("div");
+        iconElement.className = "playlist-icon";
+        iconElement.textContent = icon;
+
+        const headingText = document.createElement("div");
+
+        const title = document.createElement("h3");
+        title.textContent = name;
+
+        const count = document.createElement("p");
+        count.textContent = `${songs.length} songs`;
+
+        headingText.append(title, count);
+        heading.append(iconElement, headingText);
+
+        const descriptionElement = document.createElement("p");
+        descriptionElement.className = "playlist-description";
+        descriptionElement.textContent = description;
+
+        const list = document.createElement("ol");
+        list.className = "song-list";
+
+        const visibleSongs = songs.slice(0, 3);
+
+        visibleSongs.forEach(song => {
+          const item = document.createElement("li");
+          item.textContent = song.name;
+          list.appendChild(item);
+        });
+
+        if (!songs.length) {
+          const item = document.createElement("li");
+          item.textContent = "Belum ada lagu.";
+          item.className = "empty-song";
+          list.appendChild(item);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "playlist-card-actions";
+
+        if (songs.length > 3) {
+          const showMore = document.createElement("button");
+          showMore.type = "button";
+          showMore.className = "show-more";
+          showMore.textContent = `Lihat semua ${songs.length} lagu ↓`;
+
+          let expanded = false;
+
+          showMore.addEventListener("click", () => {
+            expanded = !expanded;
+            list.innerHTML = "";
+
+            const items = expanded ? songs : songs.slice(0, 3);
+
+            items.forEach(song => {
+              const item = document.createElement("li");
+              item.textContent = song.name;
+              list.appendChild(item);
+            });
+
+            showMore.textContent = expanded
+              ? "Tampilkan lebih sedikit ↑"
+              : `Lihat semua ${songs.length} lagu ↓`;
+          });
+
+          actions.appendChild(showMore);
+        }
+
+        const openPlayer = document.createElement("a");
+        openPlayer.href = "../index.html";
+        openPlayer.className = "play-link";
+        openPlayer.textContent = "Open Player →";
+
+        actions.appendChild(openPlayer);
+
+        card.append(
+          heading,
+          descriptionElement,
+          list,
+          actions
+        );
+
+        return card;
+      }
+
+      /* ===== RENDER COLLECTION ===== */
+
+      async function loadCollection() {
+        try {
+          const records = await getSavedSongs();
+          const groups = getGroups();
+
+          const songs = records
+            .filter(record => record && record.name)
+            .sort(
+              (a, b) =>
+                (a.addedAt || 0) - (b.addedAt || 0)
+            );
+
+          document.getElementById("total-songs").textContent =
+            songs.length + demoSongs.length;
+
+          document.getElementById("total-playlists").textContent =
+            groups.length;
+
+          grid.innerHTML = "";
+
+          const allSongs = [
+            ...songs,
+            ...demoSongs.map(name => ({ name }))
+          ];
+
+          grid.appendChild(
+            createPlaylistCard(
+              "All Songs",
+              allSongs,
+              "♫",
+              "Semua koleksi lagu Ramphony."
+            )
+          );
+
+          groups.forEach(group => {
+            const groupSongs = songs.filter(
+              song => song.groupId === group.id
+            );
+
+            grid.appendChild(
+              createPlaylistCard(
+                group.name,
+                groupSongs,
+                "▣",
+                "Playlist otomatis dari folder musik."
+              )
+            );
+          });
+
+          const ungrouped = songs.filter(song =>
+            !song.groupId ||
+            !groups.some(group => group.id === song.groupId)
+          );
+
+          grid.appendChild(
+            createPlaylistCard(
+              "Ungrouped Songs",
+              ungrouped,
+              "♪",
+              "Lagu yang ditambahkan satu per satu."
+            )
+          );
+
+        } catch (error) {
+          console.error("Gagal membaca koleksi:", error);
+
+          grid.innerHTML = "";
+
+          const message = document.createElement("p");
+          message.className = "loading";
+          message.textContent =
+            "Koleksi musik tidak dapat dimuat. Coba buka melalui server lokal.";
+
+          grid.appendChild(message);
+        }
+      }
+
+      loadProfile();
+      loadCollection();
+
+    })();
+  </script>
+
+</body>
+</html>
