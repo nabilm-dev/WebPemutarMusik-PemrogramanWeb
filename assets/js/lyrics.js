@@ -1,4 +1,3 @@
-
 /* ==========================================
    RAMPHONY - FULLSCREEN SYNCED LYRICS
    Online lyrics: LRCLIB
@@ -266,24 +265,22 @@ function parseSongName(filename) {
   let name = String(filename || "")
     .replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "")
     .replace(/^\d{1,3}[\s._-]+/, "")
-    .replace(/\((official audio|official video|lyrics?|audio)\)/gi, "")
-    .replace(/\[(official audio|official video|lyrics?|audio)\]/gi, "")
+    .replace(/\([^)]*(official|lyric|audio|video|visualizer)[^)]*\)/gi, "")
+    .replace(/\[[^\]]*(official|lyric|audio|video|visualizer)[^\]]*\]/gi, "")
     .trim();
 
-  const match = name.match(/\s[-–—]\s/);
+  const parts = name.split(/\s[-–—]\s/);
 
-  if (match) {
-    const index = match.index;
-
+  if (parts.length >= 2) {
     return {
-      artist: name.slice(0, index).trim(),
-      title: name.slice(index + match[0].length).trim()
+      artist: parts[0].trim(),
+      title: parts.slice(1).join(" - ").trim(),
     };
   }
 
   return {
     artist: "",
-    title: name
+    title: name,
   };
 }
 
@@ -298,9 +295,7 @@ function getAudio() {
 function getDuration() {
   const audio = getAudio();
 
-  return audio && Number.isFinite(audio.duration)
-    ? audio.duration
-    : 0;
+  return audio && Number.isFinite(audio.duration) ? audio.duration : 0;
 }
 
 function showMessage(message) {
@@ -322,9 +317,7 @@ function parseLRC(lrc) {
   let offset = 0;
 
   for (const rawLine of String(lrc || "").split(/\r?\n/)) {
-    const offsetMatch = rawLine.match(
-      /^\[offset:([+-]?\d+)\]/i
-    );
+    const offsetMatch = rawLine.match(/^\[offset:([+-]?\d+)\]/i);
 
     if (offsetMatch) {
       offset = Number(offsetMatch[1]) / 1000;
@@ -332,35 +325,23 @@ function parseLRC(lrc) {
     }
 
     const stamps = [
-      ...rawLine.matchAll(
-        /\[(\d{1,3}):(\d{2})(?:\.(\d{1,3}))?\]/g
-      )
+      ...rawLine.matchAll(/\[(\d{1,3}):(\d{2})(?:\.(\d{1,3}))?\]/g),
     ];
 
     if (!stamps.length) continue;
 
-    const text = rawLine
-      .replace(
-        /\[\d{1,3}:\d{2}(?:\.\d{1,3})?\]/g,
-        ""
-      )
-      .trim();
+    const text = rawLine.replace(/\[\d{1,3}:\d{2}(?:\.\d{1,3})?\]/g, "").trim();
 
     for (const stamp of stamps) {
       const minutes = Number(stamp[1]);
       const seconds = Number(stamp[2]);
-      const fraction = stamp[3]
-        ? Number("0." + stamp[3])
-        : 0;
+      const fraction = stamp[3] ? Number("0." + stamp[3]) : 0;
 
-      const time = Math.max(
-        0,
-        minutes * 60 + seconds + fraction + offset
-      );
+      const time = Math.max(0, minutes * 60 + seconds + fraction + offset);
 
       lines.push({
         time,
-        text: text || "♪"
+        text: text || "♪",
       });
     }
   }
@@ -458,12 +439,12 @@ function updateSyncedLyrics(force = false) {
     const target =
       element.offsetTop -
       lyricsContent.offsetTop -
-      lyricsContent.clientHeight * .4 +
+      lyricsContent.clientHeight * 0.4 +
       element.clientHeight / 2;
 
     lyricsContent.scrollTo({
       top: Math.max(0, target),
-      behavior: force ? "instant" : "smooth"
+      behavior: force ? "instant" : "smooth",
     });
   } else if (force) {
     lyricsContent.scrollTop = 0;
@@ -496,10 +477,7 @@ function scoreResult(record, info, duration) {
 
   if (title === wantedTitle) {
     score += 100;
-  } else if (
-    title.includes(wantedTitle) ||
-    wantedTitle.includes(title)
-  ) {
+  } else if (title.includes(wantedTitle) || wantedTitle.includes(title)) {
     score += 35;
   } else {
     return -100;
@@ -508,10 +486,7 @@ function scoreResult(record, info, duration) {
   if (wantedArtist) {
     if (artist === wantedArtist) {
       score += 80;
-    } else if (
-      artist.includes(wantedArtist) ||
-      wantedArtist.includes(artist)
-    ) {
+    } else if (artist.includes(wantedArtist) || wantedArtist.includes(artist)) {
       score += 30;
     } else {
       return -100;
@@ -519,9 +494,7 @@ function scoreResult(record, info, duration) {
   }
 
   if (duration > 0 && Number(record.duration) > 0) {
-    const difference = Math.abs(
-      Number(record.duration) - duration
-    );
+    const difference = Math.abs(Number(record.duration) - duration);
 
     if (difference <= 3) score += 30;
     else if (difference <= 12) score += 10;
@@ -537,15 +510,15 @@ function scoreResult(record, info, duration) {
 function chooseBestResult(records, info, duration) {
   if (!Array.isArray(records)) return null;
 
-  return records
-    .map(record => ({
-      record,
-      score: scoreResult(record, info, duration)
-    }))
-    .filter(item =>
-      item.score >= (info.artist ? 100 : 90)
-    )
-    .sort((a, b) => b.score - a.score)[0]?.record || null;
+  return (
+    records
+      .map((record) => ({
+        record,
+        score: scoreResult(record, info, duration),
+      }))
+      .filter((item) => item.score >= (info.artist ? 100 : 90))
+      .sort((a, b) => b.score - a.score)[0]?.record || null
+  );
 }
 
 /* ===== DISPLAY RESULT ===== */
@@ -590,8 +563,7 @@ async function loadLyrics() {
   let manualLyrics = "";
 
   try {
-    manualLyrics =
-      localStorage.getItem(storageKey(currentSong)) || "";
+    manualLyrics = localStorage.getItem(storageKey(currentSong)) || "";
   } catch (error) {
     console.warn(error);
   }
@@ -606,8 +578,7 @@ async function loadLyrics() {
   if (!navigator.onLine) {
     setBadge("OFFLINE");
     showMessage(
-      manualLyrics ||
-      "OFFLINE\n\nButuh internet untuk mencari lirik."
+      manualLyrics || "OFFLINE\n\nButuh internet untuk mencari lirik.",
     );
     return;
   }
@@ -619,23 +590,19 @@ async function loadLyrics() {
 
   try {
     const params = new URLSearchParams({
-      track_name: info.title
+      track_name: info.title,
     });
 
     if (info.artist) {
       params.set("artist_name", info.artist);
     }
 
-    const response = await fetch(
-      `${API_URL}?${params.toString()}`,
-      {
-        signal: controller.signal,
-        headers: {
-          "Accept": "application/json",
-          "Lrclib-Client": "Ramphony/1.0"
-        }
-      }
-    );
+    const response = await fetch(`${API_URL}?${params.toString()}`, {
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -645,11 +612,7 @@ async function loadLyrics() {
 
     if (requestId !== currentRequest) return;
 
-    const record = chooseBestResult(
-      records,
-      info,
-      getDuration()
-    );
+    const record = chooseBestResult(records, info, getDuration());
 
     if (record) {
       cache.set(key, record);
@@ -658,10 +621,10 @@ async function loadLyrics() {
       setBadge("NOT FOUND");
       showMessage(
         manualLyrics ||
-        "NO LYRICS FOUND\n\n" +
-        "Coba gunakan nama file:\n" +
-        "Artis - Judul Lagu.mp3\n\n" +
-        "Atau upload file .txt."
+          "NO LYRICS FOUND\n\n" +
+            "Coba gunakan nama file:\n" +
+            "Artis - Judul Lagu.mp3\n\n" +
+            "Atau upload file .txt.",
       );
     }
   } catch (error) {
@@ -670,14 +633,16 @@ async function loadLyrics() {
 
     console.error(error);
 
-    setBadge("CONNECTION ERROR");
-    showMessage(
-      manualLyrics ||
-      "Gagal mengambil lirik.\n\n" +
-      "Periksa koneksi internet dan coba lagi."
-    );
-  }
-}
+
+  setBadge("LYRICS UNAVAILABLE");
+
+  showMessage(
+    manualLyrics ||
+    "LYRICS UNAVAILABLE\n\n" +
+    "Lirik belum bisa dimuat dari layanan online.\n" +
+    "Coba lagi nanti atau upload file .txt / .lrc."
+  );
+
 
 /* ===== RECEIVE SONG ===== */
 
@@ -685,23 +650,19 @@ function setSong(name, url) {
   const nextSong = String(name || "").trim();
   const nextUrl = String(url || "");
 
-  if (
-    currentSong === nextSong &&
-    currentAudioUrl === nextUrl
-  ) {
+  if (currentSong === nextSong && currentAudioUrl === nextUrl) {
     return;
   }
 
   currentSong = nextSong;
   currentAudioUrl = nextUrl;
 
-  songTitle.textContent =
-    currentSong || "NO TRACK SELECTED";
+  songTitle.textContent = currentSong || "NO TRACK SELECTED";
 
   loadLyrics();
 }
 
-window.addEventListener("message", event => {
+window.addEventListener("message", (event) => {
   if (event.origin !== window.location.origin) return;
   if (event.source !== window.parent) return;
 
@@ -739,7 +700,7 @@ setInterval(checkSongChange, 500);
 
 /* ===== MANUAL TXT ===== */
 
-lyricsFile.addEventListener("change", async event => {
+lyricsFile.addEventListener("change", async (event) => {
   const file = event.target.files[0];
 
   if (!file) return;
@@ -766,10 +727,7 @@ lyricsFile.addEventListener("change", async event => {
       return;
     }
 
-    localStorage.setItem(
-      storageKey(songAtUpload),
-      content
-    );
+    localStorage.setItem(storageKey(songAtUpload), content);
 
     if (songAtUpload === currentSong) {
       if (
@@ -811,7 +769,7 @@ closeButton.addEventListener("click", () => {
   if (window.parent !== window) {
     window.parent.postMessage(
       { type: "RAMPHONY_CLOSE_LYRICS" },
-      window.location.origin
+      window.location.origin,
     );
   } else {
     window.location.href = "../index.html";
@@ -823,6 +781,6 @@ closeButton.addEventListener("click", () => {
 if (window.parent !== window) {
   window.parent.postMessage(
     { type: "RAMPHONY_LYRICS_READY" },
-    window.location.origin
+    window.location.origin,
   );
 }
