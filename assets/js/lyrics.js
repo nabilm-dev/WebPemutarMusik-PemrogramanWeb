@@ -1,6 +1,7 @@
+
 /* ==========================================
    RAMPHONY - FULLSCREEN SYNCED LYRICS
-   Online lyrics: LRCLIB
+   Online Lyrics: LRCLIB
    ========================================== */
 
 const songTitle = document.querySelector("#song-title");
@@ -181,14 +182,12 @@ function installFullscreenStyles() {
 
   document.head.appendChild(style);
 
-  // Karena iframe dan halaman utama sama-sama localhost,
-  // ukuran popup bisa diatur tanpa mengubah index.html.
+  // Perbesar popup pada halaman utama.
   try {
     const parentDoc = window.parent.document;
 
     if (parentDoc !== document) {
       const parentStyle = parentDoc.createElement("style");
-
       parentStyle.id = "ramphony-fullscreen-lyrics";
 
       parentStyle.textContent = `
@@ -234,7 +233,7 @@ function installFullscreenStyles() {
 
 installFullscreenStyles();
 
-/* ===== SYNC BADGE ===== */
+/* ===== BADGE ===== */
 
 const syncBadge = document.createElement("div");
 syncBadge.className = "lyrics-sync-label";
@@ -261,26 +260,30 @@ function normalize(text) {
     .trim();
 }
 
-function parseSongName(filename) {
-  let name = String(filename || "")
+function cleanSongName(filename) {
+  return String(filename || "")
     .replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "")
     .replace(/^\d{1,3}[\s._-]+/, "")
     .replace(/\([^)]*(official|lyric|audio|video|visualizer)[^)]*\)/gi, "")
     .replace(/\[[^\]]*(official|lyric|audio|video|visualizer)[^\]]*\]/gi, "")
+    .replace(/\s+/g, " ")
     .trim();
+}
 
+function parseSongName(filename) {
+  const name = cleanSongName(filename);
   const parts = name.split(/\s[-–—]\s/);
 
   if (parts.length >= 2) {
     return {
       artist: parts[0].trim(),
-      title: parts.slice(1).join(" - ").trim(),
+      title: parts.slice(1).join(" - ").trim()
     };
   }
 
   return {
     artist: "",
-    title: name,
+    title: name
   };
 }
 
@@ -295,7 +298,9 @@ function getAudio() {
 function getDuration() {
   const audio = getAudio();
 
-  return audio && Number.isFinite(audio.duration) ? audio.duration : 0;
+  return audio && Number.isFinite(audio.duration)
+    ? audio.duration
+    : 0;
 }
 
 function showMessage(message) {
@@ -310,14 +315,16 @@ function showMessage(message) {
   lyricsContent.scrollTop = 0;
 }
 
-/* ===== PARSE TIMED LYRICS ===== */
+/* ===== PARSE LRC ===== */
 
 function parseLRC(lrc) {
   const lines = [];
   let offset = 0;
 
   for (const rawLine of String(lrc || "").split(/\r?\n/)) {
-    const offsetMatch = rawLine.match(/^\[offset:([+-]?\d+)\]/i);
+    const offsetMatch = rawLine.match(
+      /^\[offset:([+-]?\d+)\]/i
+    );
 
     if (offsetMatch) {
       offset = Number(offsetMatch[1]) / 1000;
@@ -325,23 +332,32 @@ function parseLRC(lrc) {
     }
 
     const stamps = [
-      ...rawLine.matchAll(/\[(\d{1,3}):(\d{2})(?:\.(\d{1,3}))?\]/g),
+      ...rawLine.matchAll(
+        /\[(\d{1,3}):(\d{2})(?:\.(\d{1,3}))?\]/g
+      )
     ];
 
     if (!stamps.length) continue;
 
-    const text = rawLine.replace(/\[\d{1,3}:\d{2}(?:\.\d{1,3})?\]/g, "").trim();
+    const text = rawLine
+      .replace(/\[\d{1,3}:\d{2}(?:\.\d{1,3})?\]/g, "")
+      .trim();
 
     for (const stamp of stamps) {
       const minutes = Number(stamp[1]);
       const seconds = Number(stamp[2]);
-      const fraction = stamp[3] ? Number("0." + stamp[3]) : 0;
+      const fraction = stamp[3]
+        ? Number("0." + stamp[3])
+        : 0;
 
-      const time = Math.max(0, minutes * 60 + seconds + fraction + offset);
+      const time = Math.max(
+        0,
+        minutes * 60 + seconds + fraction + offset
+      );
 
       lines.push({
         time,
-        text: text || "♪",
+        text: text || "♪"
       });
     }
   }
@@ -349,7 +365,7 @@ function parseLRC(lrc) {
   return lines.sort((a, b) => a.time - b.time);
 }
 
-/* ===== RENDER SYNCED LYRICS ===== */
+/* ===== SYNCED LYRICS ===== */
 
 function showSyncedLyrics(lrc) {
   const parsed = parseLRC(lrc);
@@ -388,8 +404,8 @@ function showSyncedLyrics(lrc) {
   });
 
   lyricsText.appendChild(fragment);
-  setBadge("● SYNCED LYRICS");
 
+  setBadge("● SYNCED LYRICS");
   updateSyncedLyrics(true);
 }
 
@@ -435,7 +451,6 @@ function updateSyncedLyrics(force = false) {
   if (index >= 0 && elements[index]) {
     const element = elements[index];
 
-    // Scroll ke tengah layar.
     const target =
       element.offsetTop -
       lyricsContent.offsetTop -
@@ -444,7 +459,7 @@ function updateSyncedLyrics(force = false) {
 
     lyricsContent.scrollTo({
       top: Math.max(0, target),
-      behavior: force ? "instant" : "smooth",
+      behavior: force ? "auto" : "smooth"
     });
   } else if (force) {
     lyricsContent.scrollTop = 0;
@@ -468,6 +483,7 @@ startSyncLoop();
 function scoreResult(record, info, duration) {
   const title = normalize(record.trackName || record.name);
   const artist = normalize(record.artistName);
+
   const wantedTitle = normalize(info.title);
   const wantedArtist = normalize(info.artist);
 
@@ -477,7 +493,10 @@ function scoreResult(record, info, duration) {
 
   if (title === wantedTitle) {
     score += 100;
-  } else if (title.includes(wantedTitle) || wantedTitle.includes(title)) {
+  } else if (
+    title.includes(wantedTitle) ||
+    wantedTitle.includes(title)
+  ) {
     score += 35;
   } else {
     return -100;
@@ -486,7 +505,10 @@ function scoreResult(record, info, duration) {
   if (wantedArtist) {
     if (artist === wantedArtist) {
       score += 80;
-    } else if (artist.includes(wantedArtist) || wantedArtist.includes(artist)) {
+    } else if (
+      artist.includes(wantedArtist) ||
+      wantedArtist.includes(artist)
+    ) {
       score += 30;
     } else {
       return -100;
@@ -494,7 +516,9 @@ function scoreResult(record, info, duration) {
   }
 
   if (duration > 0 && Number(record.duration) > 0) {
-    const difference = Math.abs(Number(record.duration) - duration);
+    const difference = Math.abs(
+      Number(record.duration) - duration
+    );
 
     if (difference <= 3) score += 30;
     else if (difference <= 12) score += 10;
@@ -510,15 +534,13 @@ function scoreResult(record, info, duration) {
 function chooseBestResult(records, info, duration) {
   if (!Array.isArray(records)) return null;
 
-  return (
-    records
-      .map((record) => ({
-        record,
-        score: scoreResult(record, info, duration),
-      }))
-      .filter((item) => item.score >= (info.artist ? 100 : 90))
-      .sort((a, b) => b.score - a.score)[0]?.record || null
-  );
+  return records
+    .map(record => ({
+      record,
+      score: scoreResult(record, info, duration)
+    }))
+    .filter(item => item.score >= (info.artist ? 100 : 90))
+    .sort((a, b) => b.score - a.score)[0]?.record || null;
 }
 
 /* ===== DISPLAY RESULT ===== */
@@ -545,6 +567,34 @@ function showRecord(record) {
   showMessage("NO LYRICS AVAILABLE");
 }
 
+/* ===== SEARCH API ===== */
+
+async function searchLyrics(info, signal) {
+  const params = new URLSearchParams({
+    track_name: info.title
+  });
+
+  if (info.artist) {
+    params.set("artist_name", info.artist);
+  }
+
+  const response = await fetch(
+    `${API_URL}?${params.toString()}`,
+    {
+      signal,
+      headers: {
+        Accept: "application/json"
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`LRCLIB API: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 /* ===== LOAD LYRICS ===== */
 
 async function loadLyrics() {
@@ -559,11 +609,11 @@ async function loadLyrics() {
     return;
   }
 
-  // Manual TXT disimpan sebagai cadangan.
   let manualLyrics = "";
 
   try {
-    manualLyrics = localStorage.getItem(storageKey(currentSong)) || "";
+    manualLyrics =
+      localStorage.getItem(storageKey(currentSong)) || "";
   } catch (error) {
     console.warn(error);
   }
@@ -578,7 +628,8 @@ async function loadLyrics() {
   if (!navigator.onLine) {
     setBadge("OFFLINE");
     showMessage(
-      manualLyrics || "OFFLINE\n\nButuh internet untuk mencari lirik.",
+      manualLyrics ||
+      "OFFLINE\n\nButuh internet untuk mencari lirik."
     );
     return;
   }
@@ -586,63 +637,82 @@ async function loadLyrics() {
   setBadge("SEARCHING...");
   showMessage("SEARCHING LYRICS...");
 
-  const info = parseSongName(currentSong);
+  const cleanedName = cleanSongName(currentSong);
+  const parsed = parseSongName(currentSong);
+  const parts = cleanedName.split(/\s[-–—]\s/);
+
+  const attempts = [
+    parsed
+  ];
+
+  // Alternatif untuk file "Judul - Artis".
+  if (parts.length === 2) {
+    attempts.push({
+      title: parts[0].trim(),
+      artist: parts[1].trim()
+    });
+  }
+
+  // Alternatif tanpa nama artis.
+  attempts.push({
+    title: cleanedName,
+    artist: ""
+  });
 
   try {
-    const params = new URLSearchParams({
-      track_name: info.title,
-    });
+    let bestRecord = null;
 
-    if (info.artist) {
-      params.set("artist_name", info.artist);
+    for (const info of attempts) {
+      const records = await searchLyrics(
+        info,
+        controller.signal
+      );
+
+      if (requestId !== currentRequest) return;
+
+      const record = chooseBestResult(
+        records,
+        info,
+        getDuration()
+      );
+
+      if (record) {
+        bestRecord = record;
+        break;
+      }
     }
-
-    const response = await fetch(`${API_URL}?${params.toString()}`, {
-      signal: controller.signal,
-      headers: {
-        Accept: "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const records = await response.json();
 
     if (requestId !== currentRequest) return;
 
-    const record = chooseBestResult(records, info, getDuration());
-
-    if (record) {
-      cache.set(key, record);
-      showRecord(record);
+    if (bestRecord) {
+      cache.set(key, bestRecord);
+      showRecord(bestRecord);
     } else {
       setBadge("NOT FOUND");
       showMessage(
         manualLyrics ||
-          "NO LYRICS FOUND\n\n" +
-            "Coba gunakan nama file:\n" +
-            "Artis - Judul Lagu.mp3\n\n" +
-            "Atau upload file .txt.",
+        "NO LYRICS FOUND\n\n" +
+        "Coba gunakan nama file:\n" +
+        "Artis - Judul Lagu.mp3\n\n" +
+        "Atau upload file .txt / .lrc."
       );
     }
   } catch (error) {
     if (requestId !== currentRequest) return;
     if (error.name === "AbortError") return;
 
-    console.error(error);
+    console.error("Gagal mengambil lirik:", error);
 
+    setBadge("LYRICS UNAVAILABLE");
 
-  setBadge("LYRICS UNAVAILABLE");
-
-  showMessage(
-    manualLyrics ||
-    "LYRICS UNAVAILABLE\n\n" +
-    "Lirik belum bisa dimuat dari layanan online.\n" +
-    "Coba lagi nanti atau upload file .txt / .lrc."
-  );
-
+    showMessage(
+      manualLyrics ||
+      "LYRICS UNAVAILABLE\n\n" +
+      "Lirik belum bisa dimuat dari layanan online.\n" +
+      "Coba lagi nanti atau upload file .txt / .lrc."
+    );
+  }
+}
 
 /* ===== RECEIVE SONG ===== */
 
@@ -650,19 +720,23 @@ function setSong(name, url) {
   const nextSong = String(name || "").trim();
   const nextUrl = String(url || "");
 
-  if (currentSong === nextSong && currentAudioUrl === nextUrl) {
+  if (
+    currentSong === nextSong &&
+    currentAudioUrl === nextUrl
+  ) {
     return;
   }
 
   currentSong = nextSong;
   currentAudioUrl = nextUrl;
 
-  songTitle.textContent = currentSong || "NO TRACK SELECTED";
+  songTitle.textContent =
+    currentSong || "NO TRACK SELECTED";
 
   loadLyrics();
 }
 
-window.addEventListener("message", (event) => {
+window.addEventListener("message", event => {
   if (event.origin !== window.location.origin) return;
   if (event.source !== window.parent) return;
 
@@ -673,8 +747,6 @@ window.addEventListener("message", (event) => {
 
 /* ===== AUTO DETECT TRACK CHANGES ===== */
 
-// Jika lagu berganti ketika popup masih terbuka,
-// otomatis muat lirik lagu baru.
 let lastAudioSrc = "";
 
 function checkSongChange() {
@@ -685,11 +757,15 @@ function checkSongChange() {
 
     if (!audio || !title) return;
 
-    const src = audio.getAttribute("src") || "";
+    const src =
+      audio.getAttribute("src") ||
+      audio.currentSrc ||
+      audio.src ||
+      "";
 
     if (src && src !== lastAudioSrc) {
       lastAudioSrc = src;
-      setSong(title.textContent.trim(), audio.src);
+      setSong(title.textContent.trim(), src);
     }
   } catch {
     // Abaikan jika akses parent tidak tersedia.
@@ -698,9 +774,9 @@ function checkSongChange() {
 
 setInterval(checkSongChange, 500);
 
-/* ===== MANUAL TXT ===== */
+/* ===== MANUAL TXT / LRC ===== */
 
-lyricsFile.addEventListener("change", async (event) => {
+lyricsFile.addEventListener("change", async event => {
   const file = event.target.files[0];
 
   if (!file) return;
@@ -727,7 +803,10 @@ lyricsFile.addEventListener("change", async (event) => {
       return;
     }
 
-    localStorage.setItem(storageKey(songAtUpload), content);
+    localStorage.setItem(
+      storageKey(songAtUpload),
+      content
+    );
 
     if (songAtUpload === currentSong) {
       if (
@@ -769,7 +848,7 @@ closeButton.addEventListener("click", () => {
   if (window.parent !== window) {
     window.parent.postMessage(
       { type: "RAMPHONY_CLOSE_LYRICS" },
-      window.location.origin,
+      window.location.origin
     );
   } else {
     window.location.href = "../index.html";
@@ -781,6 +860,6 @@ closeButton.addEventListener("click", () => {
 if (window.parent !== window) {
   window.parent.postMessage(
     { type: "RAMPHONY_LYRICS_READY" },
-    window.location.origin,
+    window.location.origin
   );
 }
