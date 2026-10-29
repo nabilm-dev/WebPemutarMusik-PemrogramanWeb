@@ -1187,3 +1187,33 @@ body.drop {
     margin-left: 0 !important;
   }
 }
+
+/* HAMBURGER TETAP DI POJOK KIRI ATAS */
+.menu-toggle {
+  position: fixed !important;
+  top: 20px !important;
+  left: 20px !important;
+  z-index: 1001 !important;
+}
+
+/* BIAR SIDEBAR TETAP DI ATAS KONTEN */
+.sidebar {
+  z-index: 1000;
+}
+
+.menu-overlay {
+  z-index: 999;
+}
+
+/* HAMBURGER DI ATAS HALAMAN, TIDAK IKUT SCROLL */
+.menu-toggle {
+  position: absolute !important;
+  top: 26px !important;
+  left: 24px !important;
+  z-index: 1001 !important;
+}
+
+/* Hamburger hilang saat sidebar terbuka */
+.menu-toggle[aria-expanded="true"] {
+  display: none !important;
+}

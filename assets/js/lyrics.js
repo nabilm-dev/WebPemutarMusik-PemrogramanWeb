@@ -1,7 +1,9 @@
 
+"use strict";
+
 /* ==========================================
-   RAMPHONY - FULLSCREEN SYNCED LYRICS
-   Online Lyrics: LRCLIB
+   RAMPHONY - SHARED FULLSCREEN LYRICS
+   Home + My Playlist
    ========================================== */
 
 const songTitle = document.querySelector("#song-title");
@@ -19,12 +21,11 @@ let syncedLines = [];
 let activeLine = -1;
 let currentRequest = 0;
 let controller = null;
-let animationId = null;
 let currentMode = "plain";
 
 const cache = new Map();
 
-/* ===== FULLSCREEN STYLING ===== */
+/* ===== FULLSCREEN ===== */
 
 function installFullscreenStyles() {
   const style = document.createElement("style");
@@ -35,205 +36,24 @@ function installFullscreenStyles() {
       height: 100%;
       margin: 0;
       overflow: hidden;
-      background: #101010;
     }
 
     .lyrics-app {
       width: 100%;
       height: 100dvh;
       max-width: none !important;
-      min-height: 0;
       margin: 0 !important;
-      padding: 0 !important;
       border: none !important;
       border-radius: 0 !important;
-      display: flex;
-      flex-direction: column;
-      background: #101010;
-    }
-
-    .lyrics-header {
-      flex-shrink: 0;
-      padding: 22px 32px;
-      background: #181818;
-      border-bottom: 1px solid #303030;
-    }
-
-    .lyrics-screen {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      padding: 24px 7vw !important;
-      overflow: hidden;
-    }
-
-    #song-title {
-      flex-shrink: 0;
-      color: #b5e4bf;
-      font-size: clamp(18px, 3vw, 28px);
-      margin-bottom: 20px;
-      overflow-wrap: anywhere;
-    }
-
-    #lyrics-content {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto !important;
-      scroll-behavior: smooth;
-      scrollbar-width: thin;
-      scrollbar-color: #45634c transparent;
-      padding: 12vh 0 35vh !important;
-    }
-
-    #lyrics-text {
-      white-space: pre-wrap;
-      font-family: "Segoe UI", sans-serif;
-      font-size: clamp(23px, 3.5vw, 42px);
-      font-weight: 700;
-      line-height: 1.65;
-      color: #b5e4bf;
-      text-align: center;
-    }
-
-    #lyrics-text.synced-mode {
-      white-space: normal;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 22px;
-      text-align: center;
-    }
-
-    .lyric-line {
-      width: 100%;
-      max-width: 1000px;
-      color: #737b76;
-      opacity: .45;
-      font-size: clamp(24px, 4vw, 52px);
-      font-weight: 800;
-      line-height: 1.35;
-      letter-spacing: -.5px;
-      transition:
-        color .25s,
-        opacity .25s,
-        transform .25s;
-      cursor: pointer;
-      overflow-wrap: anywhere;
-    }
-
-    .lyric-line.active {
-      color: #b5e4bf;
-      opacity: 1;
-      transform: scale(1.035);
-    }
-
-    .lyric-line.past {
-      color: #b5e4bf;
-      opacity: .5;
-    }
-
-    .lyric-line:hover {
-      opacity: .85;
-    }
-
-    .lyrics-sync-label {
-      position: fixed;
-      right: 22px;
-      bottom: 20px;
-      z-index: 20;
-      padding: 9px 14px;
-      border-radius: 20px;
-      background: #26382b;
-      color: #b5e4bf;
-      font: 12px "Segoe UI", sans-serif;
-      letter-spacing: 1px;
-      pointer-events: none;
-    }
-
-    @media (max-width: 600px) {
-      .lyrics-header {
-        padding: 16px;
-      }
-
-      .lyrics-screen {
-        padding: 20px 18px !important;
-      }
-
-      #lyrics-content {
-        padding-top: 14vh !important;
-      }
-
-      .lyric-line {
-        font-size: clamp(23px, 7vw, 34px);
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .lyric-line {
-        transition: none;
-      }
-
-      #lyrics-content {
-        scroll-behavior: auto;
-      }
     }
   `;
 
   document.head.appendChild(style);
-
-  // Perbesar popup pada halaman utama.
-  try {
-    const parentDoc = window.parent.document;
-
-    if (parentDoc !== document) {
-      const parentStyle = parentDoc.createElement("style");
-      parentStyle.id = "ramphony-fullscreen-lyrics";
-
-      parentStyle.textContent = `
-        #lyrics-overlay.active {
-          position: fixed !important;
-          inset: 0 !important;
-          z-index: 9999 !important;
-          display: flex !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          background: #101010 !important;
-        }
-
-        #lyrics-overlay .lyrics-popup {
-          width: 100vw !important;
-          max-width: none !important;
-          height: 100vh !important;
-          height: 100dvh !important;
-          max-height: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: 0 !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-        }
-
-        #lyrics-overlay .lyrics-popup iframe {
-          display: block !important;
-          width: 100% !important;
-          height: 100% !important;
-          border: 0 !important;
-        }
-      `;
-
-      if (!parentDoc.getElementById(parentStyle.id)) {
-        parentDoc.head.appendChild(parentStyle);
-      }
-    }
-  } catch (error) {
-    console.warn("Fullscreen parent tidak tersedia:", error);
-  }
 }
 
 installFullscreenStyles();
 
-/* ===== BADGE ===== */
+/* ===== STATUS BADGE ===== */
 
 const syncBadge = document.createElement("div");
 syncBadge.className = "lyrics-sync-label";
@@ -242,6 +62,26 @@ document.body.appendChild(syncBadge);
 
 function setBadge(text) {
   syncBadge.textContent = text;
+}
+
+/* ===== AUDIO: HOME OR PLAYLIST ===== */
+
+function getAudio() {
+  try {
+    return window.parent.document.querySelector(
+      "#playlist-audio, #a"
+    );
+  } catch {
+    return null;
+  }
+}
+
+function getDuration() {
+  const audio = getAudio();
+
+  return audio && Number.isFinite(audio.duration)
+    ? audio.duration
+    : 0;
 }
 
 /* ===== HELPERS ===== */
@@ -287,31 +127,13 @@ function parseSongName(filename) {
   };
 }
 
-function getAudio() {
-  try {
-    return window.parent.document.querySelector("#a");
-  } catch {
-    return null;
-  }
-}
-
-function getDuration() {
-  const audio = getAudio();
-
-  return audio && Number.isFinite(audio.duration)
-    ? audio.duration
-    : 0;
-}
-
 function showMessage(message) {
   currentMode = "plain";
   syncedLines = [];
   activeLine = -1;
 
   lyricsText.classList.remove("synced-mode");
-  lyricsText.replaceChildren();
   lyricsText.textContent = message;
-
   lyricsContent.scrollTop = 0;
 }
 
@@ -350,13 +172,11 @@ function parseLRC(lrc) {
         ? Number("0." + stamp[3])
         : 0;
 
-      const time = Math.max(
-        0,
-        minutes * 60 + seconds + fraction + offset
-      );
-
       lines.push({
-        time,
+        time: Math.max(
+          0,
+          minutes * 60 + seconds + fraction + offset
+        ),
         text: text || "♪"
       });
     }
@@ -434,8 +254,7 @@ function updateSyncedLyrics(force = false) {
   const audio = getAudio();
   if (!audio) return;
 
-  const time = audio.currentTime || 0;
-  const index = findActiveLine(time);
+  const index = findActiveLine(audio.currentTime || 0);
 
   if (index === activeLine && !force) return;
 
@@ -468,17 +287,12 @@ function updateSyncedLyrics(force = false) {
 
 function syncLoop() {
   updateSyncedLyrics();
-  animationId = requestAnimationFrame(syncLoop);
+  requestAnimationFrame(syncLoop);
 }
 
-function startSyncLoop() {
-  if (animationId !== null) return;
-  animationId = requestAnimationFrame(syncLoop);
-}
+requestAnimationFrame(syncLoop);
 
-startSyncLoop();
-
-/* ===== SEARCH RESULTS ===== */
+/* ===== LRCLIB RESULT MATCHING ===== */
 
 function scoreResult(record, info, duration) {
   const title = normalize(record.trackName || record.name);
@@ -542,8 +356,6 @@ function chooseBestResult(records, info, duration) {
     .filter(item => item.score >= (info.artist ? 100 : 90))
     .sort((a, b) => b.score - a.score)[0]?.record || null;
 }
-
-/* ===== DISPLAY RESULT ===== */
 
 function showRecord(record) {
   if (record.instrumental) {
@@ -618,6 +430,17 @@ async function loadLyrics() {
     console.warn(error);
   }
 
+  // Prioritaskan lirik yang diupload user.
+  if (manualLyrics.trim()) {
+    if (parseLRC(manualLyrics).length) {
+      showSyncedLyrics(manualLyrics);
+    } else {
+      setBadge("MANUAL LYRICS");
+      showMessage(manualLyrics);
+    }
+    return;
+  }
+
   const key = currentSong.toLowerCase();
 
   if (cache.has(key)) {
@@ -628,7 +451,6 @@ async function loadLyrics() {
   if (!navigator.onLine) {
     setBadge("OFFLINE");
     showMessage(
-      manualLyrics ||
       "OFFLINE\n\nButuh internet untuk mencari lirik."
     );
     return;
@@ -641,11 +463,8 @@ async function loadLyrics() {
   const parsed = parseSongName(currentSong);
   const parts = cleanedName.split(/\s[-–—]\s/);
 
-  const attempts = [
-    parsed
-  ];
+  const attempts = [parsed];
 
-  // Alternatif untuk file "Judul - Artis".
   if (parts.length === 2) {
     attempts.push({
       title: parts[0].trim(),
@@ -653,7 +472,6 @@ async function loadLyrics() {
     });
   }
 
-  // Alternatif tanpa nama artis.
   attempts.push({
     title: cleanedName,
     artist: ""
@@ -690,11 +508,9 @@ async function loadLyrics() {
     } else {
       setBadge("NOT FOUND");
       showMessage(
-        manualLyrics ||
         "NO LYRICS FOUND\n\n" +
         "Coba gunakan nama file:\n" +
-        "Artis - Judul Lagu.mp3\n\n" +
-        "Atau upload file .txt / .lrc."
+        "Artis - Judul Lagu.mp3"
       );
     }
   } catch (error) {
@@ -704,12 +520,9 @@ async function loadLyrics() {
     console.error("Gagal mengambil lirik:", error);
 
     setBadge("LYRICS UNAVAILABLE");
-
     showMessage(
-      manualLyrics ||
       "LYRICS UNAVAILABLE\n\n" +
-      "Lirik belum bisa dimuat dari layanan online.\n" +
-      "Coba lagi nanti atau upload file .txt / .lrc."
+      "Lirik belum bisa dimuat dari layanan online."
     );
   }
 }
@@ -745,15 +558,21 @@ window.addEventListener("message", event => {
   }
 });
 
-/* ===== AUTO DETECT TRACK CHANGES ===== */
+/* ===== AUTO DETECT HOME / PLAYLIST TRACK ===== */
 
 let lastAudioSrc = "";
 
 function checkSongChange() {
   try {
     const parentDoc = window.parent.document;
-    const audio = parentDoc.querySelector("#a");
-    const title = parentDoc.querySelector("#title");
+
+    const audio = parentDoc.querySelector(
+      "#playlist-audio, #a"
+    );
+
+    const title = parentDoc.querySelector(
+      "#playing-title, #title"
+    );
 
     if (!audio || !title) return;
 
@@ -768,7 +587,7 @@ function checkSongChange() {
       setSong(title.textContent.trim(), src);
     }
   } catch {
-    // Abaikan jika akses parent tidak tersedia.
+    // Parent tidak dapat diakses.
   }
 }
 
@@ -809,10 +628,7 @@ lyricsFile.addEventListener("change", async event => {
     );
 
     if (songAtUpload === currentSong) {
-      if (
-        file.name.toLowerCase().endsWith(".lrc") &&
-        parseLRC(content).length
-      ) {
+      if (parseLRC(content).length) {
         showSyncedLyrics(content);
       } else {
         setBadge("MANUAL LYRICS");
