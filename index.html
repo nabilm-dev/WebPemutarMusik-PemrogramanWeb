@@ -1,205 +1,267 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Ramphony - Music Player</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
 
-<div class="app">
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
 
-    <!-- SIDEBAR DESKTOP -->
-    <aside class="sidebar">
+  <body>
+    <div class="app">
+      <!-- ===== TOMBOL HAMBURGER ===== -->
+      <button
+        class="menu-toggle"
+        id="menu-toggle"
+        type="button"
+        aria-label="Buka menu"
+        aria-expanded="false"
+        aria-controls="sidebar"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <!-- ===== OVERLAY NAVBAR ===== -->
+      <div class="menu-overlay" id="menu-overlay"></div>
+
+      <!-- ===== NAVBAR POPUP ===== -->
+      <aside class="sidebar" id="sidebar">
         <h1 class="logo">Ramphony</h1>
 
         <nav class="side-nav">
-            <a href="index.html" class="active">Home</a>
-            <a href="pages/about.html">About</a>
-            <a href="#playlist">Daftar putar</a>
+          <a href="index.html" class="active">Home</a>
+          <a href="pages/about.html">About</a>
+          <a href="#playlist">Daftar putar</a>
         </nav>
 
-        <p class="copyright">© 2026 - Pemrograman Web</p>
-    </aside>
+        <p class="copyright">© 2026 - Ramphony</p>
+      </aside>
 
-    <!-- KONTEN UTAMA -->
-    <main class="main-content">
-
+      <!-- ===== KONTEN UTAMA ===== -->
+      <main class="main-content">
+        <!-- HEADER -->
         <header class="topbar">
-            <h1 class="mobile-logo">Ramphony</h1>
-            <span class="topbar-label">Pemutar Musik</span>
-            <a href="pages/form-data.html" class="register">
-                Register
-            </a>
+          <!-- LOGO RAMPHONY (KLIK UNTUK HOME) -->
+          <a href="index.html" class="topbar-label"> Ramphony </a>
+
+          <!-- REGISTER -->
+          <a href="pages/form-data.html" class="register"> Register </a>
         </header>
 
+        <!-- ===== AREA PLAYER DAN PLAYLIST ===== -->
         <div class="workspace">
+          <!-- ===== LCD MUSIC PLAYER ===== -->
+          <section class="player-panel">
+            <div class="lcd-frame">
+              <div class="lcd-screen">
+                <!-- STATUS LCD -->
+                <div class="lcd-status">
+                  <div class="lcd-tags">
+                    <span class="music-note">♫</span>
+                    <span class="lcd-tag">MP3</span>
+                    <span class="lcd-tag">NOR</span>
+                  </div>
 
-            <!-- PANEL PEMUTAR -->
-            <section class="player-panel">
+                  <span class="lcd-tag">BAT</span>
+                </div>
 
-                <div class="lcd-frame">
-                    <div class="lcd-screen">
+                <!-- ISI LCD -->
+                <div class="lcd-display">
+                  <!-- JUDUL LAGU -->
+                  <div class="lcd-title-wrap">
+                    <div id="title" class="lcd-title">Belum ada lagu</div>
+                  </div>
 
-                        <!-- LCD STATUS -->
-                        <div class="lcd-status">
-                            <div class="lcd-tags">
-                                <span class="music-note">♫</span>
-                                <span class="lcd-tag">MP3</span>
-                                <span class="lcd-tag">NOR</span>
-                            </div>
-                            <span class="lcd-tag">BAT</span>
-                        </div>
+                  <!-- PROGRESS LAGU -->
+                  <div class="lcd-progress">
+                    <span id="cur">0:00</span>
 
-                        <!-- LCD DISPLAY -->
-                        <div class="lcd-display">
+                    <input
+                      type="range"
+                      id="seek"
+                      min="0"
+                      max="1000"
+                      value="0"
+                      aria-label="Posisi lagu"
+                    />
 
-                            <div class="lcd-title-wrap">
-                                <div id="title" class="lcd-title">
-                                    Belum ada lagu
-                                </div>
-                            </div>
+                    <span id="dur">0:00</span>
+                  </div>
 
-                            <div class="lcd-progress">
-                                <span id="cur">0:00</span>
-                                <input
-                                    type="range"
-                                    id="seek"
-                                    min="0"
-                                    max="1000"
-                                    value="0"
-                                    aria-label="Posisi lagu"
-                                >
-                                <span id="dur">0:00</span>
-                            </div>
-
-                            <div class="lcd-bottom">
-                                <div class="lcd-info">
-                                    <span id="lcd-play-state">▶</span>
-                                    <span>◀))</span>
-                                    <span id="lcd-volume">80</span>
-                                </div>
-
-                                <div class="visualizer" id="visualizer">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-
-                        </div>
+                  <!-- INFORMASI LCD -->
+                  <div class="lcd-bottom">
+                    <div class="lcd-info">
+                      <span id="lcd-play-state">▶</span>
+                      <span>◀))</span>
+                      <span id="lcd-volume">80</span>
                     </div>
-                </div>
 
-                <!-- KONTROL MOBILE -->
-                <div class="mobile-controls">
-                    <button id="mobile-shuf" class="control-btn" aria-label="Acak">⤨</button>
-                    <button id="mobile-prev" class="control-btn" aria-label="Sebelumnya">◀Ⅰ</button>
-                    <button id="mobile-play" class="control-btn primary" aria-label="Putar">▶</button>
-                    <button id="mobile-next" class="control-btn" aria-label="Berikutnya">Ⅰ▶</button>
-                    <button id="mobile-rep" class="control-btn" aria-label="Ulangi">⇄</button>
-                </div>
-
-            </section>
-
-            <!-- PLAYLIST -->
-            <section class="playlist-panel" id="playlist">
-
-                <div class="playlist-header">
-                    <h2 id="count">Daftar putar</h2>
-
-                    <div class="playlist-actions">
-                        <button id="demo" class="btn-demo">
-                            Coba demo
-                        </button>
-
-                        <button id="pick" class="btn-add">
-                            Tambah lagu
-                        </button>
+                    <!-- VISUALIZER -->
+                    <div class="visualizer" id="visualizer">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
+                  </div>
                 </div>
+              </div>
+            </div>
 
-                <ul id="ul" class="track-list"></ul>
+            <!-- ===== KONTROL MOBILE ===== -->
+            <div class="mobile-controls">
+              <button
+                id="mobile-shuf"
+                class="control-btn"
+                type="button"
+                aria-label="Acak"
+              >
+                ⤨
+              </button>
 
-                <div class="drop-zone">
-                    Seret berkas audio ke halaman ini
-                    untuk menambah lagu.
-                </div>
+              <button
+                id="mobile-prev"
+                class="control-btn"
+                type="button"
+                aria-label="Sebelumnya"
+              >
+                ◀Ⅰ
+              </button>
 
-                <input
-                    type="file"
-                    id="file"
-                    accept="audio/*"
-                    multiple
-                    hidden
-                >
+              <button
+                id="mobile-play"
+                class="control-btn primary"
+                type="button"
+                aria-label="Putar"
+              >
+                ▶
+              </button>
 
-            </section>
+              <button
+                id="mobile-next"
+                class="control-btn"
+                type="button"
+                aria-label="Berikutnya"
+              >
+                Ⅰ▶
+              </button>
 
+              <button
+                id="mobile-rep"
+                class="control-btn"
+                type="button"
+                aria-label="Ulangi"
+              >
+                ⇄
+              </button>
+            </div>
+          </section>
+
+          <!-- ===== PLAYLIST ===== -->
+          <section class="playlist-panel" id="playlist">
+            <div class="playlist-header">
+              <h2 id="count">Daftar putar</h2>
+
+              <div class="playlist-actions">
+                <button id="demo" class="btn-demo" type="button">
+                  Coba demo
+                </button>
+
+                <button id="pick" class="btn-add" type="button">
+                  Tambah lagu
+                </button>
+              </div>
+            </div>
+
+            <!-- DAFTAR LAGU -->
+            <ul id="ul" class="track-list"></ul>
+
+            <!-- DRAG & DROP -->
+            <div class="drop-zone">
+              Seret berkas audio ke halaman ini untuk menambah lagu.
+            </div>
+
+            <!-- INPUT FILE -->
+            <input type="file" id="file" accept="audio/*" multiple hidden />
+          </section>
         </div>
-    </main>
-</div>
+      </main>
+    </div>
 
-<!-- BOTTOM PLAYER DESKTOP -->
-<footer class="bottom-player">
-
-    <div class="now-playing">
-        <div class="song-icon" id="ini">R</div>
+    <!-- ===== BOTTOM PLAYER DESKTOP ===== -->
+    <footer class="bottom-player">
+      <!-- INFORMASI LAGU -->
+      <div class="now-playing">
+        <div class="song-icon" id="ini">♪</div>
 
         <div class="song-meta">
-            <div id="bottom-title">Belum ada lagu</div>
-            <small id="sub">Tambahkan lagu</small>
+          <div id="bottom-title">Belum ada lagu</div>
+
+          <small id="sub"> Tambahkan lagu </small>
         </div>
-    </div>
+      </div>
 
-    <div class="bottom-center">
-
+      <!-- KONTROL DESKTOP -->
+      <div class="bottom-center">
         <div class="desktop-controls">
-            <button id="shuf" aria-label="Acak">⤨</button>
-            <button id="prev" aria-label="Sebelumnya">◀Ⅰ</button>
-            <button id="play" class="main-play" aria-label="Putar">▶</button>
-            <button id="next" aria-label="Berikutnya">Ⅰ▶</button>
-            <button id="rep" aria-label="Ulangi">⇄</button>
+          <button id="shuf" type="button" aria-label="Acak">⤨</button>
+
+          <button id="prev" type="button" aria-label="Sebelumnya">◀Ⅰ</button>
+
+          <button id="play" class="main-play" type="button" aria-label="Putar">
+            ▶
+          </button>
+
+          <button id="next" type="button" aria-label="Berikutnya">Ⅰ▶</button>
+
+          <button id="rep" type="button" aria-label="Ulangi">⇄</button>
         </div>
 
+        <!-- PROGRESS DESKTOP -->
         <div class="bottom-seek">
-            <span id="bottom-cur">0:00</span>
-            <div class="progress-track">
-                <div id="bottom-progress"></div>
-            </div>
-            <span id="bottom-dur">0:00</span>
+          <span id="bottom-cur">0:00</span>
+
+          <div class="progress-track">
+            <div id="bottom-progress"></div>
+          </div>
+
+          <span id="bottom-dur">0:00</span>
         </div>
+      </div>
 
-    </div>
-
-    <div class="volume-control">
+      <!-- VOLUME -->
+      <div class="volume-control">
         <span>◀))</span>
+
         <input
-            type="range"
-            id="vol"
-            min="0"
-            max="100"
-            value="80"
-            aria-label="Volume"
-        >
+          type="range"
+          id="vol"
+          min="0"
+          max="100"
+          value="80"
+          aria-label="Volume"
+        />
+
         <span id="volume-number">80</span>
-    </div>
+      </div>
+    </footer>
 
-</footer>
+    <!-- ===== AUDIO ===== -->
+    <audio id="a" preload="metadata"></audio>
 
-<audio id="a" preload="metadata"></audio>
-
-<script src="assets/js/player.js"></script>
-</body>
+    <!-- ===== JAVASCRIPT ===== -->
+    <script src="assets/js/player.js"></script>
+  </body>
 </html>
