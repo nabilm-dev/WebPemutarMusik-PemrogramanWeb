@@ -1,7 +1,7 @@
 
 /* ===== RAMPHONY MUSIC PLAYER ===== */
 
-const $ = (selector) => document.querySelector(selector);
+const $ = selector => document.querySelector(selector);
 const audio = $("#a");
 
 let tracks = [];
@@ -69,7 +69,6 @@ function render() {
 
   filtered.forEach(({ track, index }) => {
     const li = document.createElement("li");
-
     if (index === cur) li.classList.add("cur");
 
     const button = document.createElement("button");
@@ -91,11 +90,8 @@ function render() {
     button.append(number, title, tag);
 
     button.onclick = () => {
-      if (index === cur) {
-        toggle();
-      } else {
-        load(index, true);
-      }
+      if (index === cur) toggle();
+      else load(index, true);
     };
 
     li.appendChild(button);
@@ -116,6 +112,7 @@ function load(index, autoplay = false) {
 
   $("#title").textContent = track.name;
   $("#bottom-title").textContent = track.name;
+
   $("#sub").textContent =
     track.tag === "Demo" ? "Lagu demo" : "Dari perangkatmu";
 
@@ -135,9 +132,7 @@ function load(index, autoplay = false) {
   updateSeekFill();
   render();
 
-  if (autoplay) {
-    playAudio();
-  }
+  if (autoplay) playAudio();
 }
 
 /* ===== PLAY / PAUSE ===== */
@@ -152,19 +147,13 @@ function playAudio() {
 
 function toggle() {
   if (cur < 0) {
-    if (tracks.length) {
-      load(0, true);
-    } else {
-      $("#pick").click();
-    }
+    if (tracks.length) load(0, true);
+    else $("#pick").click();
     return;
   }
 
-  if (audio.paused) {
-    playAudio();
-  } else {
-    audio.pause();
-  }
+  if (audio.paused) playAudio();
+  else audio.pause();
 }
 
 /* ===== NEXT / PREVIOUS ===== */
@@ -186,11 +175,8 @@ function step(direction) {
 }
 
 function previous() {
-  if (audio.currentTime > 3) {
-    audio.currentTime = 0;
-  } else {
-    step(-1);
-  }
+  if (audio.currentTime > 3) audio.currentTime = 0;
+  else step(-1);
 }
 
 /* ===== SHUFFLE ===== */
@@ -225,6 +211,8 @@ function toggleRepeat() {
     button.setAttribute("aria-label", button.title);
     button.setAttribute("aria-pressed", String(repeat > 0));
   });
+
+  refreshControlIcons();
 }
 
 /* ===== BUTTON EVENTS ===== */
@@ -241,29 +229,286 @@ $("#mobile-prev").onclick = previous;
 $("#mobile-shuf").onclick = toggleShuffle;
 $("#mobile-rep").onclick = toggleRepeat;
 
-/* ===== UPLOAD SONGS ===== */
+/* ===== INDEXEDDB ===== */
+
+const DB_NAME = "ramphony-music-v1";
+const STORE_NAME = "songs";
+const AUDIO_EXTENSION = /\.(mp3|m4a|wav|ogg|flac|aac)$/i;
+
+let dbPromise = null;
+const knownSongs = new Set();
+
+function getSongKey(file) {
+  const path = file.webkitRelativePath || file.name;
+  return `${path}::${file.size}::${file.lastModified}`;
+}
+
+function openDatabase() {
+  if (!("indexedDB" in window)) {
+    return Promise.reject(
+      new Error("Browser tidak mendukung IndexedDB.")
+    );
+  }
+
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, {
+          keyPath: "id"
+        });
+      }
+    };
+
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
+
+    request.onerror = () => reject(request.error);
+    request.onblocked = () =>
+      reject(new Error("Database sedang dipakai tab lain."));
+  }).catch(error => {
+    dbPromise = null;
+    throw error;
+  });
+
+  return dbPromise;
+}
+
+async function getSavedSongs() {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(
+      STORE_NAME,
+      "readonly"
+    );
+
+    const request = transaction
+      .objectStore(STORE_NAME)
+      .getAll();
+
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveSong(record) {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(
+      STORE_NAME,
+      "readwrite"
+    );
+
+    transaction.objectStore(STORE_NAME).put(record);
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () =>
+      reject(transaction.error || new Error("Gagal menyimpan"));
+    transaction.onabort = () =>
+      reject(transaction.error || new Error("Penyimpanan dibatalkan"));
+  });
+}
+
+function addStoredSong(record) {
+  if (knownSongs.has(record.id)) return false;
+
+  knownSongs.add(record.id);
+
+  tracks.push({
+    name: record.name,
+    src: URL.createObjectURL(record.file),
+    tag: "Berkas",
+    localId: record.id
+  });
+
+  return true;
+}
+
+/* ===== STORAGE NOTIFICATION ===== */
+
+function showStorageNotice(message) {
+  let notice = $("#storage-notice");
+
+  if (!notice) {
+    notice = document.createElement("p");
+    notice.id = "storage-notice";
+    notice.setAttribute("role", "status");
+
+    notice.style.cssText = `
+      font-size: 12px;
+      color: #b5e4bf;
+      margin: 8px 0;
+      line-height: 1.5;
+    `;
+
+    const actions = $(".playlist-actions");
+
+    (actions?.parentElement || $("#playlist"))
+      .appendChild(notice);
+  }
+
+  notice.textContent = message;
+}
+
+/* ===== FOLDER UPLOAD ===== */
+
+const folderInput = document.createElement("input");
+
+folderInput.type = "file";
+folderInput.id = "music-folder-input";
+folderInput.multiple = true;
+folderInput.setAttribute("webkitdirectory", "");
+folderInput.hidden = true;
+
+$("#playlist").appendChild(folderInput);
+
+const folderButton = document.createElement("button");
+
+folderButton.type = "button";
+folderButton.id = "pick-folder";
+folderButton.className = "btn-add";
+folderButton.textContent = "📁 Pilih Folder";
+folderButton.title = "Tambahkan semua lagu dari satu folder";
+
+const actions = $(".playlist-actions");
+
+if (actions) {
+  actions.appendChild(folderButton);
+} else {
+  $("#pick").insertAdjacentElement("afterend", folderButton);
+}
 
 $("#pick").onclick = () => $("#file").click();
+folderButton.onclick = () => folderInput.click();
 $("#demo").onclick = addDemo;
 
-$("#file").onchange = event => {
-  addFiles(event.target.files);
+$("#file").onchange = async event => {
+  const files = [...event.target.files];
   event.target.value = "";
+  await addFiles(files);
 };
 
-function addFiles(files) {
-  const items = [...files]
-    .filter(file =>
-      file.type.startsWith("audio/") ||
-      /\.(mp3|m4a|wav|ogg|flac|aac)$/i.test(file.name)
-    )
-    .map(file => ({
-      name: file.name.replace(/\.[^.]+$/, ""),
-      src: URL.createObjectURL(file),
-      tag: "Berkas"
-    }));
+folderInput.onchange = async event => {
+  const files = [...event.target.files];
+  event.target.value = "";
+  await addFiles(files);
+};
 
-  add(items);
+/* ===== RESTORE SONGS ===== */
+
+const restorePromise = (async () => {
+  try {
+    const saved = await getSavedSongs();
+
+    saved.sort(
+      (a, b) => (a.addedAt || 0) - (b.addedAt || 0)
+    );
+
+    const first = tracks.length;
+    let restored = 0;
+
+    for (const record of saved) {
+      if (
+        record.file instanceof Blob &&
+        addStoredSong(record)
+      ) {
+        restored++;
+      }
+    }
+
+    if (restored) {
+      render();
+
+      if (cur < 0) load(first, false);
+
+      showStorageNotice(
+        `${restored} lagu dipulihkan dari browser.`
+      );
+    }
+  } catch (error) {
+    console.warn("IndexedDB gagal dibuka:", error);
+
+    showStorageNotice(
+      "Penyimpanan otomatis tidak tersedia. Lagu tetap bisa diputar sementara."
+    );
+  }
+})();
+
+/* ===== ADD FILES ===== */
+
+async function addFiles(files) {
+  const selected = Array.from(files || []).filter(file =>
+    file instanceof File &&
+    (
+      file.type.startsWith("audio/") ||
+      AUDIO_EXTENSION.test(file.name)
+    )
+  );
+
+  if (!selected.length) {
+    showStorageNotice(
+      "Folder atau berkas tidak berisi audio yang didukung."
+    );
+    return;
+  }
+
+  await restorePromise;
+
+  let added = 0;
+  let saved = 0;
+  let failed = 0;
+
+  const first = tracks.length;
+
+  showStorageNotice(`Memproses ${selected.length} lagu...`);
+
+  for (const file of selected) {
+    const id = getSongKey(file);
+
+    if (knownSongs.has(id)) continue;
+
+    const record = {
+      id,
+      name: file.name.replace(/\.[^.]+$/, ""),
+      file,
+      addedAt: Date.now() + added
+    };
+
+    if (addStoredSong(record)) added++;
+
+    try {
+      await saveSong(record);
+      saved++;
+    } catch (error) {
+      failed++;
+      console.warn("Gagal menyimpan:", file.name, error);
+    }
+  }
+
+  if (added) {
+    render();
+    if (cur < 0) load(first, false);
+  }
+
+  if (failed) {
+    showStorageNotice(
+      `${added} lagu masuk playlist. ${saved} tersimpan, ${failed} gagal disimpan.`
+    );
+  } else {
+    showStorageNotice(
+      `${added} lagu baru ditambahkan. ${saved} tersimpan di browser.`
+    );
+  }
 }
 
 /* ===== TIME FORMAT ===== */
@@ -277,12 +522,11 @@ function formatTime(seconds) {
   return minutes + ":" + String(secs).padStart(2, "0");
 }
 
-/* ===== FIXED PROGRESS BAR ===== */
+/* ===== PROGRESS BAR ===== */
 
 const seek = $("#seek");
 const bottomSeek = $("#bottom-progress");
 
-// Semua progress menggunakan skala 0 sampai 100.
 seek.min = 0;
 seek.max = 100;
 seek.step = 0.1;
@@ -304,11 +548,13 @@ function updateSeekFill() {
 }
 
 function seekTo(percent) {
-  if (!Number.isFinite(audio.duration) || audio.duration <= 0) {
-    return;
-  }
+  if (
+    !Number.isFinite(audio.duration) ||
+    audio.duration <= 0
+  ) return;
 
-  audio.currentTime = (Number(percent) / 100) * audio.duration;
+  audio.currentTime =
+    (Number(percent) / 100) * audio.duration;
 }
 
 seek.oninput = () => {
@@ -362,8 +608,6 @@ audio.addEventListener("durationchange", updateProgress);
 
 const volume = $("#vol");
 
-audio.volume = 1;
-
 function updateVolume() {
   audio.volume = Number(volume.value) / 100;
 
@@ -386,8 +630,9 @@ const icons = {
   next:
     '<path d="M16 5h2v14h-2zM5 5v14l10-7z"/>',
 
+  // REPEAT ICON BARU: GARIS HALUS, PANAH NYAMBUNG
   repeat:
-    '<path d="M17 2l4 4-4 4V7H6a2 2 0 00-2 2v2H2V9a4 4 0 014-4h11V2zm1 15a2 2 0 002-2v-2h2v2a4 4 0 01-4 4H7v3l-4-4 4-4v3h11z"/>',
+    '<path d="M17 2l4 4-4 4M21 6H7a4 4 0 0 0-4 4v1M7 22l-4-4 4-4M3 18h14a4 4 0 0 0 4-4v-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
 
   play:
     '<path d="M8 5v14l11-7z"/>',
@@ -432,7 +677,6 @@ let animationId = null;
 const visualizer = $("#visualizer");
 const bars = [...visualizer.querySelectorAll("span")];
 
-// Hentikan animasi CSS lama agar tidak bentrok.
 bars.forEach(bar => {
   bar.style.animation = "none";
   bar.style.transition = "height 80ms linear";
@@ -491,7 +735,6 @@ function animateVisualizer() {
   const binCount = frequencyData.length;
 
   bars.forEach((bar, index) => {
-    // Ambil rentang frekuensi rendah hingga menengah.
     const start = Math.floor(
       (index / bars.length) * binCount * 0.65
     );
@@ -561,11 +804,8 @@ function updateState(playing) {
   refreshControlIcons();
   render();
 
-  if (playing) {
-    startVisualizer();
-  } else {
-    stopVisualizer();
-  }
+  if (playing) startVisualizer();
+  else stopVisualizer();
 }
 
 audio.addEventListener("play", () => {
@@ -603,9 +843,7 @@ document.addEventListener("keydown", event => {
     tag === "BUTTON" ||
     tag === "TEXTAREA" ||
     event.target.isContentEditable
-  ) {
-    return;
-  }
+  ) return;
 
   if (event.code === "Space") {
     event.preventDefault();

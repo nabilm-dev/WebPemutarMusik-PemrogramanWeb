@@ -2,387 +2,342 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Create Profile - Ramphony</title>
-
-    <link rel="stylesheet" href="../assets/css/form.css">
-
-    <style>
-        /* ===== HEADER PROFILE ===== */
-
-        .profile-header {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 28px 20px 0;
-        }
-
-        .profile-header-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-        }
-
-        .profile-header h1 {
-            margin: 0;
-            color: #B5E4BF;
-            font-size: 30px;
-            letter-spacing: 2px;
-        }
-
-        .back-home {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-
-            padding: 10px 16px;
-            border: 1px solid #444;
-            border-radius: 999px;
-
-            color: #ffffff;
-            font-size: 13px;
-            white-space: nowrap;
-
-            transition: background .2s, border-color .2s;
-        }
-
-        .back-home:hover {
-            background: #303030;
-            border-color: #B5E4BF;
-            color: #B5E4BF;
-        }
-
-        .profile-subtitle {
-            margin: 18px 0 0;
-            color: #aaaaaa;
-            font-size: 14px;
-            text-align: left;
-        }
-
-        .form-footer {
-            padding: 24px;
-            color: #aaaaaa;
-            font-size: 13px;
-            text-align: center;
-        }
-
-        @media (max-width: 480px) {
-            .profile-header {
-                padding: 20px 16px 0;
-            }
-
-            .profile-header h1 {
-                font-size: 23px;
-            }
-
-            .back-home {
-                padding: 9px 12px;
-                font-size: 12px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Ramphony</title>
+  <link rel="stylesheet" href="../assets/css/form.css">
 </head>
-
 <body>
 
-    <!-- ===== HEADER ===== -->
+  <div class="profile-page">
 
-    <header class="profile-header">
-
-        <div class="profile-header-top">
-
-            <h1>Ramphony</h1>
-
-            <a href="../index.html" class="back-home">
-                ← Kembali
-            </a>
-
-        </div>
-
-        <p class="profile-subtitle">
-            Buat profil untuk pengalaman musik yang lebih personal.
-        </p>
-
+    <header class="profile-topbar">
+      <a href="../index.html" class="brand">♫ Ramphony</a>
+      <a href="../index.html" class="back-link">← Back to Player</a>
     </header>
 
+    <main class="profile-main">
 
-    <!-- ===== CREATE PROFILE FORM ===== -->
+      <div class="page-heading">
+        <span class="eyebrow">YOUR MUSIC IDENTITY</span>
+        <h1 id="page-title">Create Your Profile<span>.</span></h1>
+        <p>
+          Bikin profil musik yang mencerminkan selera lu.
+          Semua data tersimpan secara lokal di browser.
+        </p>
+      </div>
 
-    <main>
+      <div class="profile-layout">
 
-        <form id="profile-form">
+        <!-- PROFILE PREVIEW -->
+        <aside class="profile-preview">
+          <div class="preview-top">
+            <span class="preview-label">LISTENER CARD</span>
+            <span class="preview-symbol">♫</span>
+          </div>
 
-            <fieldset>
+          <div class="avatar" id="profile-avatar">R</div>
 
-                <legend>Profil Pengguna</legend>
+          <h2 id="preview-name">Your Name</h2>
+          <p class="preview-username" id="preview-username">
+            @username
+          </p>
 
-                <!-- USERNAME -->
+          <span class="listener-badge">✦ RAMPHONY LISTENER</span>
 
-                <p>
-                    <label for="username">Username</label>
+          <div class="preview-divider"></div>
 
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        placeholder="Contoh: ramphony_user"
-                        minlength="3"
-                        maxlength="20"
-                        pattern="[A-Za-z0-9_]+"
-                        title="Gunakan huruf, angka, atau underscore"
-                        autocomplete="username"
-                        required
-                    >
-                </p>
+          <div class="preview-info">
+            <span>FAVORITE ARTIST</span>
+            <strong id="preview-artist">Not set yet</strong>
+          </div>
 
+          <div class="preview-info">
+            <span>ABOUT ME</span>
+            <p id="preview-bio">
+              Your music story starts here...
+            </p>
+          </div>
 
-                <!-- DISPLAY NAME -->
+          <div class="preview-footer">
+            <span>PERSONAL MUSIC SPACE</span>
+            <span>01 / 01</span>
+          </div>
+        </aside>
 
-                <p>
-                    <label for="display-name">Nama Tampilan</label>
+        <!-- EDIT PROFILE -->
+        <section class="form-card">
 
-                    <input
-                        type="text"
-                        id="display-name"
-                        name="displayName"
-                        placeholder="Contoh: Music Lover"
-                        maxlength="30"
-                        required
-                    >
-                </p>
+          <div class="form-heading">
+            <div>
+              <span class="eyebrow">PERSONAL DETAILS</span>
+              <h2 id="form-heading">Set Up Profile</h2>
+            </div>
+            <span class="form-heading-icon">✎</span>
+          </div>
 
+          <form id="profile-form">
 
-                <!-- FAVORITE ARTIST -->
-
-                <p>
-                    <label for="favorite-artist">
-                        Band / Artis Favorit
-                    </label>
-
-                    <input
-                        type="text"
-                        id="favorite-artist"
-                        name="favoriteArtist"
-                        placeholder="Contoh: Rex Orange County"
-                        maxlength="80"
-                    >
-                </p>
-
-
-                <!-- BIO -->
-
-                <p>
-                    <label for="bio">
-                        Bio Singkat (Opsional)
-                    </label>
-
-                    <textarea
-                        id="bio"
-                        name="bio"
-                        rows="4"
-                        maxlength="150"
-                        placeholder="Ceritakan sedikit tentang selera musikmu..."
-                    ></textarea>
-                </p>
-
-            </fieldset>
-
-
-            <!-- ===== BUTTONS ===== -->
-
-            <div class="actions">
-
-                <button type="submit" id="save-profile">
-                    Simpan Profil
-                </button>
-
-                <button
-                    type="button"
-                    class="secondary"
-                    id="cancel-profile"
-                >
-                    Batal
-                </button>
-
+            <div class="field">
+              <label for="display-name">Display Name <b>*</b></label>
+              <input
+                type="text"
+                id="display-name"
+                name="displayName"
+                placeholder="Contoh: Music Lover"
+                maxlength="30"
+                required
+              >
+              <small>Nama yang tampil di profil Ramphony.</small>
             </div>
 
-        </form>
+            <div class="field">
+              <label for="username">Username <b>*</b></label>
+              <div class="input-prefix">
+                <span>@</span>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  placeholder="ramphony_user"
+                  minlength="3"
+                  maxlength="20"
+                  pattern="[A-Za-z0-9_]+"
+                  title="Gunakan huruf, angka, atau underscore"
+                  autocomplete="username"
+                  required
+                >
+              </div>
+              <small>3–20 karakter. Huruf, angka, dan underscore.</small>
+            </div>
 
+            <div class="field">
+              <label for="favorite-artist">Favorite Artist</label>
+              <input
+                type="text"
+                id="favorite-artist"
+                name="favoriteArtist"
+                placeholder="Contoh: Rex Orange County"
+                maxlength="80"
+              >
+            </div>
+
+            <div class="field">
+              <div class="field-label-row">
+                <label for="bio">About Your Music Taste</label>
+                <small id="bio-counter">0 / 150</small>
+              </div>
+              <textarea
+                id="bio"
+                name="bio"
+                rows="4"
+                maxlength="150"
+                placeholder="Ceritain sedikit tentang selera musik lu..."
+              ></textarea>
+            </div>
+
+            <div class="privacy-note">
+              <span>♧</span>
+              <p>
+                Profil disimpan di browser ini, bukan di server.
+                Menghapus data situs dapat menghapus profil.
+              </p>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="save-profile" class="save-btn">
+                Save Profile
+                <span>→</span>
+              </button>
+
+              <button
+                type="button"
+                id="cancel-profile"
+                class="cancel-btn"
+              >
+                Cancel
+              </button>
+            </div>
+
+          </form>
+        </section>
+
+      </div>
     </main>
 
-
-    <!-- ===== FOOTER ===== -->
-
-    <footer class="form-footer">
-        <p>© 2026 Ramphony</p>
+    <footer class="profile-footer">
+      © 2026 Ramphony · Your music, your space.
     </footer>
 
+  </div>
 
-    <!-- ===== JAVASCRIPT ===== -->
+  <!-- SUCCESS POPUP -->
+  <div class="success-overlay" id="success-overlay" hidden>
+    <div
+      class="success-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="success-title"
+    >
+      <div class="success-icon">✓</div>
+      <h2 id="success-title">Profile Saved!</h2>
+      <p>Profil lu berhasil disimpan di browser ini.</p>
+      <a href="../index.html" class="success-home">
+        Back to Ramphony →
+      </a>
+      <button type="button" id="close-success" class="success-close">
+        Tetap di sini
+      </button>
+    </div>
+  </div>
 
-    <script>
-        const STORAGE_KEY = "ramphony_profile";
+  <script>
+    /* ===== PROFILE STORAGE ===== */
 
-        const form = document.getElementById("profile-form");
-        const username = document.getElementById("username");
-        const displayName = document.getElementById("display-name");
-        const favoriteArtist = document.getElementById("favorite-artist");
-        const bio = document.getElementById("bio");
+    const STORAGE_KEY = "ramphony_profile";
 
-        const saveButton = document.getElementById("save-profile");
-        const cancelButton = document.getElementById("cancel-profile");
+    const form = document.getElementById("profile-form");
+    const username = document.getElementById("username");
+    const displayName = document.getElementById("display-name");
+    const favoriteArtist = document.getElementById("favorite-artist");
+    const bio = document.getElementById("bio");
 
+    const saveButton = document.getElementById("save-profile");
+    const cancelButton = document.getElementById("cancel-profile");
+    const successOverlay = document.getElementById("success-overlay");
 
-        // ===== LOAD PROFILE =====
+    /* ===== LIVE PREVIEW ===== */
 
-        function loadProfile() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
+    function updatePreview() {
+      const name = displayName.value.trim() || "Your Name";
+      const user = username.value.trim() || "username";
+      const artist = favoriteArtist.value.trim() || "Not set yet";
+      const about = bio.value.trim() ||
+        "Your music story starts here...";
 
-                if (!saved) return;
+      document.getElementById("preview-name").textContent = name;
+      document.getElementById("preview-username").textContent =
+        "@" + user;
+      document.getElementById("preview-artist").textContent = artist;
+      document.getElementById("preview-bio").textContent = about;
 
-                const profile = JSON.parse(saved);
+      document.getElementById("profile-avatar").textContent =
+        name.charAt(0).toUpperCase();
 
-                username.value = profile.username || "";
-                displayName.value = profile.displayName || "";
-                favoriteArtist.value = profile.favoriteArtist || "";
-                bio.value = profile.bio || "";
+      document.getElementById("bio-counter").textContent =
+        bio.value.length + " / 150";
+    }
 
-                saveButton.textContent = "Perbarui Profil";
+    [username, displayName, favoriteArtist, bio].forEach(input => {
+      input.addEventListener("input", updatePreview);
+    });
 
-            } catch (error) {
-                console.error("Gagal membaca profil:", error);
-            }
+    /* ===== LOAD EXISTING PROFILE ===== */
+
+    function loadProfile() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          updatePreview();
+          return;
         }
 
+        const profile = JSON.parse(saved);
 
-        // ===== SAVE PROFILE =====
+        username.value = profile.username || "";
+        displayName.value = profile.displayName || "";
+        favoriteArtist.value = profile.favoriteArtist || "";
+        bio.value = profile.bio || "";
 
-        form.addEventListener("submit", function(event) {
-            event.preventDefault();
+        document.getElementById("page-title").innerHTML =
+          "My Profile<span>.</span>";
 
-            if (!form.reportValidity()) return;
+        document.getElementById("form-heading").textContent =
+          "Edit Your Profile";
 
-            const profile = {
-                username: username.value.trim(),
-                displayName: displayName.value.trim(),
-                favoriteArtist: favoriteArtist.value.trim(),
-                bio: bio.value.trim()
-            };
+        saveButton.firstChild.textContent = "Save Changes ";
 
-            if (!profile.username || !profile.displayName) {
-                alert("Username dan nama tampilan wajib diisi.");
-                return;
-            }
+        updatePreview();
+      } catch (error) {
+        console.warn("Gagal membaca profil:", error);
+        updatePreview();
+      }
+    }
 
-            try {
-                localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify(profile)
-                );
+    /* ===== SAVE PROFILE ===== */
 
-                showNotification("Profil berhasil disimpan!");
+    form.addEventListener("submit", event => {
+      event.preventDefault();
 
-                saveButton.textContent = "Perbarui Profil";
+      if (!form.reportValidity()) return;
 
-            } catch (error) {
-                console.error("Gagal menyimpan profil:", error);
-                alert("Profil gagal disimpan. Coba lagi.");
-            }
-        });
+      const profile = {
+        username: username.value.trim(),
+        displayName: displayName.value.trim(),
+        favoriteArtist: favoriteArtist.value.trim(),
+        bio: bio.value.trim()
+      };
 
+      if (!profile.username || !profile.displayName) {
+        alert("Username dan nama tampilan wajib diisi.");
+        return;
+      }
 
-        // ===== CANCEL =====
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(profile)
+        );
 
-        cancelButton.addEventListener("click", function() {
-            window.location.href = "../index.html";
-        });
+        document.getElementById("page-title").innerHTML =
+          "My Profile<span>.</span>";
 
+        document.getElementById("form-heading").textContent =
+          "Edit Your Profile";
 
-        // ===== NOTIFICATION =====
+        saveButton.firstChild.textContent = "Save Changes ";
 
-        function showNotification(message) {
-            const existing = document.getElementById("profile-overlay");
+        successOverlay.hidden = false;
+        document.body.classList.add("modal-open");
 
-            if (existing) existing.remove();
+        document.getElementById("close-success").focus();
+      } catch (error) {
+        console.error("Gagal menyimpan profil:", error);
+        alert("Profil gagal disimpan. Coba lagi.");
+      }
+    });
 
-            const overlay = document.createElement("div");
-            overlay.id = "profile-overlay";
+    /* ===== CANCEL ===== */
 
-            overlay.style.cssText = `
-                position: fixed;
-                inset: 0;
-                z-index: 9999;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                padding: 20px;
-                background: rgba(0,0,0,0.75);
-            `;
+    cancelButton.addEventListener("click", () => {
+      window.location.href = "../index.html";
+    });
 
-            const box = document.createElement("div");
+    /* ===== CLOSE SUCCESS POPUP ===== */
 
-            box.style.cssText = `
-                width: 100%;
-                max-width: 380px;
-                padding: 32px;
-                background: #202020;
-                border-top: 5px solid #B5E4BF;
-                border-radius: 18px;
-                text-align: center;
-                color: white;
-                box-shadow: 0 15px 45px rgba(0,0,0,0.4);
-            `;
+    function closeSuccess() {
+      successOverlay.hidden = true;
+      document.body.classList.remove("modal-open");
+      saveButton.focus();
+    }
 
-            const icon = document.createElement("div");
-            icon.textContent = "✓";
+    document.getElementById("close-success")
+      .addEventListener("click", closeSuccess);
 
-            icon.style.cssText = `
-                width: 64px;
-                height: 64px;
-                line-height: 64px;
-                margin: 0 auto 18px;
-                border-radius: 50%;
-                background: #B5E4BF;
-                color: #071b12;
-                font-size: 36px;
-                font-weight: bold;
-            `;
+    successOverlay.addEventListener("click", event => {
+      if (event.target === successOverlay) closeSuccess();
+    });
 
-            const title = document.createElement("h2");
-            title.textContent = message;
-            title.style.marginBottom = "12px";
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !successOverlay.hidden) {
+        closeSuccess();
+      }
+    });
 
-            const description = document.createElement("p");
-            description.textContent =
-                "Profil kamu sudah tersimpan di browser ini.";
+    /* ===== INITIALIZATION ===== */
 
-            description.style.cssText = `
-                color: #aaaaaa;
-                font-size: 14px;
-                margin-bottom: 24px;
-            `;
-
-            const button = document.createElement("button");
-            button.type = "button";
-            button.textContent = "Kembali ke Ramphony";
-
-            button.addEventListener("click", function() {
-                window.location.href = "../index.html";
-            });
-
-            box.append(icon, title, description, button);
-            overlay.appendChild(box);
-            document.body.appendChild(overlay);
-        }
-
-
-        // ===== INITIALIZE =====
-
-        loadProfile();
-    </script>
+    loadProfile();
+  </script>
 
 </body>
 </html>
