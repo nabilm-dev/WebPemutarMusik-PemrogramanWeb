@@ -1,19 +1,20 @@
 header {
     padding: 28px 20px;
+    text-align: center;
 }
 
 main {
     width: 100%;
-    max-width: none;
-    margin: 0;
-    padding: 28px 40px;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px;
     display: block;
 }
 
-/* ===== Form full width, 2 kolom ===== */
+/* ===== Form 1 kolom, di tengah ===== */
 form {
     width: 100%;
-    max-width: none;
+    margin: 0 auto;
     background-color: var(--card);
     padding: 28px 32px;
     border-radius: 12px;
@@ -22,14 +23,13 @@ form {
     color-scheme: dark;
 
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 24px;
     align-items: start;
 }
 
 form > p.option,
 form > p.actions {
-    grid-column: 1 / -1;
     margin-bottom: 0;
 }
 
@@ -38,7 +38,8 @@ fieldset {
     border: 1px solid #333;
     border-radius: 10px;
     padding: 16px 20px 6px;
-    margin-bottom: 0;
+    margin: 0;
+    min-width: 0;
 }
 
 legend {
@@ -49,15 +50,6 @@ legend {
 
 form p {
     margin-bottom: 14px;
-}
-
-fieldset fieldset {
-    background-color: var(--item);
-    margin-bottom: 14px;
-    padding: 12px 16px 4px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 28px;
 }
 
 /* ===== Label & Input ===== */
@@ -122,15 +114,6 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 
-.option.metode span {
-    color: var(--text-muted);
-    margin-right: 6px;
-}
-
-.option.metode label {
-    margin-right: 14px;
-}
-
 /* ===== Tombol ===== */
 .actions {
     display: flex;
@@ -165,79 +148,13 @@ button.secondary:hover {
     border-color: var(--text);
 }
 
-/* ===== Toast ===== */
-.toast {
-    position: fixed;
-    top: 80px;
-    right: 24px;
-    z-index: 100;
-    max-width: 320px;
-    padding: 14px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    color: var(--black);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    transform: translateX(30px);
-    pointer-events: none;
-    transition: opacity 0.3s, transform 0.3s;
-}
-
-.toast.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.toast.sukses {
-    background-color: var(--green);
-}
-
-.toast.gagal {
-    background-color: #ff5252;
-}
-
-/* ===== Hasil kiriman ===== */
-.hasil {
-    margin-top: 24px;
-    padding: 20px 24px;
-    background-color: var(--card);
-    border-left: 6px solid var(--green);
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.hasil[hidden] {
-    display: none;
-}
-
-.hasil h2 {
-    margin-bottom: 6px;
-}
-
-.hasil p {
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    word-break: break-all;
-    margin-bottom: 12px;
-}
-
-.hasil pre {
-    background-color: var(--black);
-    color: var(--green-light);
-    padding: 14px 16px;
-    border-radius: 8px;
-    overflow-x: auto;
-    font-size: 0.9rem;
-}
-
-/* ===== Layar kecil: 1 kolom ===== */
+/* ===== Layar kecil ===== */
 @media (max-width: 800px) {
     main {
         padding: 20px 16px;
     }
 
     form {
-        grid-template-columns: 1fr;
         padding: 20px;
     }
 }
