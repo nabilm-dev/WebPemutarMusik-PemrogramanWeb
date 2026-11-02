@@ -200,10 +200,9 @@
     // Filter out yourself: you chat strictly with OTHER real users!
     let otherUsers = allUsers.filter(u => {
       if (!u) return false;
+      // Strictly match current user by unique uid or email
       if (me.uid && u.uid && me.uid === u.uid) return false;
       if (me.email && u.email && me.email.toLowerCase() === String(u.email).toLowerCase()) return false;
-      if (me.username && u.username && me.username.toLowerCase() === String(u.username).toLowerCase()) return false;
-      if (me.displayName && u.displayName && me.displayName.toLowerCase() === String(u.displayName).toLowerCase()) return false;
       return true;
     });
 
@@ -797,21 +796,8 @@
           });
 
           if (remoteUsers.length > 0) {
-            const currentList = getRegisteredUsers();
-            let changed = false;
-            remoteUsers.forEach(ru => {
-              const idx = currentList.findIndex(x => x.username.toLowerCase() === ru.username.toLowerCase());
-              if (idx >= 0) {
-                currentList[idx] = { ...currentList[idx], ...ru };
-              } else {
-                currentList.push(ru);
-                changed = true;
-              }
-            });
-            if (changed) {
-              localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(currentList));
-              renderInbox();
-            }
+            localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(remoteUsers));
+            renderInbox();
           }
         }, err => {
           // Silent fallback if rules or collection not initialized yet
