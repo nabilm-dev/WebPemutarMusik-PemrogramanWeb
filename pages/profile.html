@@ -182,15 +182,16 @@
               authBtn.style.background = "rgba(235, 87, 87, 0.12)";
               authBtn.style.borderColor = "rgba(235, 87, 87, 0.3)";
               authBtn.onclick = () => {
+                // Clear all session & account cache for clean account switching
                 localStorage.removeItem("ramphony_user");
-                const guest = {
-                  displayName: "Guest Listener",
-                  username: "guest",
-                  bio: "Login to save playlists and chat with friends.",
-                  avatar: ""
-                };
-                localStorage.setItem(PROFILE_KEY, JSON.stringify(guest));
+                localStorage.removeItem("ramphony_profile");
+                localStorage.removeItem("ramphony_registered_accounts");
+                localStorage.removeItem("ramphony_user_chat_threads_v3");
+                sessionStorage.clear();
                 loadProfile();
+                try {
+                  window.parent?.postMessage({ type: "RAMPHONY_AUTH_CHANGE", user: null }, "*");
+                } catch (e) {}
                 window.postMessage({ type: "RAMPHONY_AUTH_CHANGE", user: null }, "*");
               };
             } else {

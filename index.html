@@ -352,8 +352,262 @@
         z-index: 10004 !important;
       }
     </style>
-    <link rel="stylesheet" href="assets/css/auth.css" />
-    <link rel="stylesheet" href="assets/css/chat.css" />
+    <link rel="stylesheet" href="assets/css/auth.css?v=2.5" />
+    <link rel="stylesheet" href="assets/css/chat.css?v=2.5" />
+      <!-- MUSIC SHARING DRAWER STYLES (INLINE TO AVOID CACHING) -->
+    <style id="music-sharing-drawer-styles">
+      .chat-music-drawer {
+        background: rgba(14, 24, 18, 0.98) !important;
+        border: 1px solid rgba(181, 228, 191, 0.35) !important;
+        border-radius: 20px !important;
+        padding: 14px 16px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 20px rgba(181, 228, 191, 0.12) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        animation: drawerSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        color: #ffffff !important;
+      }
+      .chat-music-drawer[hidden] {
+        display: none !important;
+      }
+      @keyframes drawerSlideUp {
+        from { opacity: 0; transform: translateY(14px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      .cmd-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 10px !important;
+        border-bottom: 1px solid rgba(181, 228, 191, 0.18) !important;
+      }
+      .cmd-title {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #b5e4bf !important;
+        letter-spacing: 0.3px !important;
+      }
+      .cmd-close {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        color: #a0b8a8 !important;
+        width: 26px !important;
+        height: 26px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 13px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        padding: 0 !important;
+      }
+      .cmd-close:hover {
+        background: rgba(235, 87, 87, 0.25) !important;
+        color: #ff8585 !important;
+        border-color: rgba(235, 87, 87, 0.4) !important;
+        transform: rotate(90deg) !important;
+      }
+      .cmd-current-box {
+        background: rgba(181, 228, 191, 0.1) !important;
+        border: 1px solid rgba(181, 228, 191, 0.3) !important;
+        border-radius: 14px !important;
+        padding: 10px 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+      }
+      .cmd-current-icon {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 10px !important;
+        background: #b5e4bf !important;
+        color: #071b12 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 16px !important;
+        flex-shrink: 0 !important;
+        box-shadow: 0 0 12px rgba(181, 228, 191, 0.35) !important;
+      }
+      .cmd-current-meta {
+        flex: 1 !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .cmd-sub {
+        font-size: 10px !important;
+        color: #8fa899 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.6px !important;
+        font-weight: 600 !important;
+      }
+      .cmd-current-title {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin-top: 2px !important;
+      }
+      .cmd-send-btn {
+        background: #b5e4bf !important;
+        color: #071b12 !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 7px 14px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        flex-shrink: 0 !important;
+        font-family: inherit !important;
+        box-shadow: 0 4px 14px rgba(181, 228, 191, 0.35) !important;
+      }
+      .cmd-send-btn:hover:not(:disabled) {
+        background: #c9f0d1 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 18px rgba(181, 228, 191, 0.5) !important;
+      }
+      .cmd-send-btn:disabled {
+        opacity: 0.45 !important;
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+      }
+      .cmd-playlist-section {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 7px !important;
+      }
+      .cmd-section-label {
+        font-size: 11px !important;
+        color: #8fa899 !important;
+        font-weight: 600 !important;
+      }
+      .cmd-playlist-list {
+        max-height: 140px !important;
+        overflow-y: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        padding-right: 4px !important;
+      }
+      .cmd-playlist-list::-webkit-scrollbar {
+        width: 4px !important;
+      }
+      .cmd-playlist-list::-webkit-scrollbar-thumb {
+        background: rgba(181, 228, 191, 0.3) !important;
+        border-radius: 4px !important;
+      }
+      .cmd-track-item {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 7px 12px !important;
+        border-radius: 10px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(181, 228, 191, 0.14) !important;
+        transition: all 0.2s ease !important;
+        gap: 10px !important;
+      }
+      .cmd-track-item:hover {
+        background: rgba(181, 228, 191, 0.1) !important;
+        border-color: rgba(181, 228, 191, 0.3) !important;
+        transform: translateX(2px) !important;
+      }
+      .cmd-track-left {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+      }
+      .cmd-track-disc {
+        width: 22px !important;
+        height: 22px !important;
+        border-radius: 50% !important;
+        background: rgba(181, 228, 191, 0.15) !important;
+        color: #b5e4bf !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 11px !important;
+        flex-shrink: 0 !important;
+      }
+      .cmd-track-meta {
+        flex: 1 !important;
+        min-width: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .cmd-track-name {
+        font-size: 12px !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      .cmd-track-artist {
+        font-size: 10px !important;
+        color: #8fa899 !important;
+      }
+      .cmd-track-share-btn {
+        background: rgba(181, 228, 191, 0.18) !important;
+        border: 1px solid rgba(181, 228, 191, 0.4) !important;
+        color: #b5e4bf !important;
+        border-radius: 8px !important;
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        flex-shrink: 0 !important;
+        font-family: inherit !important;
+      }
+      .cmd-track-share-btn:hover {
+        background: #b5e4bf !important;
+        color: #071b12 !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 2px 10px rgba(181, 228, 191, 0.4) !important;
+      }
+      .chat-tool-btn {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        background: rgba(181, 228, 191, 0.14) !important;
+        border: 1px solid rgba(181, 228, 191, 0.28) !important;
+        color: #b5e4bf !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        flex-shrink: 0 !important;
+        padding: 0 !important;
+      }
+      .chat-tool-btn:hover {
+        background: #b5e4bf !important;
+        color: #071b12 !important;
+        transform: scale(1.08) !important;
+        box-shadow: 0 0 14px rgba(181, 228, 191, 0.5) !important;
+      }
+      .chat-tool-btn:active {
+        transform: scale(0.92) !important;
+      }
+    </style>
   </head>
 
   <body>
@@ -404,16 +658,32 @@
           <a href="#" class="nav-link" data-page="settings">Settings</a>
         </nav>
 
-        <div class="sidebar-account" id="sidebar-account-box">
+        <!-- SIDEBAR AUTH: UNLOGGED (LOGIN/REGISTER BUTTON) & LOGGED IN (USER CARD) -->
+        <button type="button" class="sidebar-login-card" id="sidebar-login-trigger" title="Masuk atau Buat Akun">
+          <div class="slc-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+          </div>
+          <div class="slc-info">
+            <span class="slc-title">Masuk / Daftar</span>
+            <small class="slc-sub">Buka Fitur Chat & Akun</small>
+          </div>
+          <span class="slc-arrow">→</span>
+        </button>
+
+        <div class="sidebar-user-card" id="sidebar-user-info" hidden>
           <div class="sa-avatar-wrap">
             <img id="sa-avatar-img" class="sa-avatar-img" src="" alt="Avatar" hidden />
-            <span id="sa-avatar-letter">G</span>
+            <span id="sa-avatar-letter" class="sa-avatar-letter">N</span>
           </div>
           <div class="sa-user-info">
-            <span id="sa-name" class="sa-name">Guest</span>
-            <small id="sa-sub" class="sa-sub">Mode Tamu</small>
+            <span id="sa-name" class="sa-name">User</span>
+            <small id="sa-sub" class="sa-sub">@user</small>
           </div>
-          <button type="button" id="sa-action-btn" class="sa-action-btn">Masuk / Daftar</button>
+          <button type="button" id="sa-logout-btn" class="sa-action-btn sa-logout-btn" title="Keluar dari akun">Keluar</button>
         </div>
 
         <p class="copyright">© Ramphony Offline Player</p>
@@ -437,12 +707,14 @@
               Masuk / Daftar
             </button>
 
-            <!-- PROFILE BUTTON -->
+            <!-- PROFILE BUTTON (Hanya muncul jika sudah login) -->
             <a
               href="pages/profile.html"
               class="profile-button"
+              id="topbar-profile-btn"
               title="My Profile"
               aria-label="My Profile"
+              hidden
             >
               <svg
                 width="22"
@@ -1250,6 +1522,21 @@
           </p>
         </form>
 
+        <!-- GOOGLE SIGN-IN BUTTON & DIVIDER -->
+        <div class="auth-divider">
+          <span>atau</span>
+        </div>
+
+        <button type="button" id="auth-google-btn" class="auth-google-btn" title="Masuk dengan Akun Google">
+          <svg class="google-svg" width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Lanjutkan dengan Google</span>
+        </button>
+
         <div class="auth-firebase-hint">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 18h16L12 2zm0 4.5l5.2 10.5H6.8L12 6.5z"/></svg>
           <span>Firebase Auth Ready · Siap dihubungkan ke Firebase Project</span>
@@ -1266,7 +1553,7 @@
           <header class="chat-inbox-header">
             <div class="chat-inbox-user">
               <span class="chat-greeting-label">Halo,</span>
-              <h2 id="chat-inbox-my-name" class="chat-user-headline">Nabil</h2>
+              <h2 id="chat-inbox-my-name" class="chat-user-headline">User</h2>
             </div>
             <div class="chat-inbox-actions">
               <button id="chat-inbox-close" class="chat-round-btn" type="button" title="Tutup Chat">✕</button>
@@ -1305,11 +1592,11 @@
                 </svg>
               </button>
               <div class="chat-convo-avatar-wrap">
-                <div id="chat-convo-avatar" class="chat-convo-avatar">L</div>
+                <div id="chat-convo-avatar" class="chat-convo-avatar">?</div>
                 <span id="chat-convo-online-dot" class="chat-convo-online-dot"></span>
               </div>
               <div class="chat-convo-meta">
-                <h3 id="chat-convo-name">Larry Machigo</h3>
+                <h3 id="chat-convo-name">-</h3>
                 <span id="chat-convo-status" class="chat-convo-status">Online</span>
               </div>
             </div>
@@ -1319,16 +1606,59 @@
           <!-- MESSAGES LIST -->
           <div id="chat-messages-list" class="chat-messages-scroll"></div>
 
-          <!-- INPUT FORM -->
+          <!-- INPUT FORM & SHARE DRAWER -->
           <div class="chat-convo-bottom">
+            <!-- SHARE MUSIC DRAWER (COLLAPSIBLE) -->
+            <div id="chat-music-drawer" class="chat-music-drawer" hidden>
+              <div class="cmd-header">
+                <div class="cmd-title">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                  </svg>
+                  <span>Bagikan Musik (Share Track)</span>
+                </div>
+                <button type="button" id="cmd-close-btn" class="cmd-close" title="Tutup">✕</button>
+              </div>
+
+              <!-- Sedang Diputar -->
+              <div id="cmd-current-box" class="cmd-current-box">
+                <div class="cmd-current-icon">🎵</div>
+                <div class="cmd-current-meta">
+                  <span class="cmd-sub">Sedang Diputar di Player:</span>
+                  <strong id="cmd-current-title" class="cmd-current-title">Memuat info lagu...</strong>
+                </div>
+                <button type="button" id="cmd-send-current-btn" class="cmd-send-btn" title="Kirim lagu ini ke obrolan">
+                  <span>Bagikan</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+              </div>
+
+              <!-- Playlist / Library Selector -->
+              <div class="cmd-playlist-section">
+                <span class="cmd-section-label">Atau pilih dari koleksi lagu:</span>
+                <div id="cmd-playlist-list" class="cmd-playlist-list">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+            </div>
+
             <form id="chat-send-form" class="chat-input-pill">
+              <button
+                type="button"
+                id="chat-share-music-btn"
+                class="chat-tool-btn"
+                title="Bagikan Lagu ke Teman Chat"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+              </button>
               <input
                 type="text"
                 id="chat-input-text"
                 class="chat-input-field"
                 placeholder="Tulis pesan..."
                 autocomplete="off"
-                required
               />
               <button type="submit" id="chat-send-submit" class="chat-send-btn" title="Kirim Pesan">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">

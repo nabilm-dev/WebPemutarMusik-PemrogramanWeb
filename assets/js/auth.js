@@ -38,7 +38,8 @@
   /* ========================================================
      2. CHECK & INITIALIZE FIREBASE
      ======================================================== */
-  function initFirebase() {
+  function ensureFirebase() {
+    if (isFirebaseReady && firebaseAuth) return true;
     if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId && typeof window.firebase !== "undefined") {
       try {
         if (!window.firebase.apps.length) {
@@ -48,30 +49,47 @@
         }
         firebaseAuth = window.firebase.auth();
         isFirebaseReady = true;
-        console.log("⚡ Ramphony Firebase Auth connected successfully.");
+        return true;
+      } catch (err) {
+        console.warn("Firebase Auth init warning:", err);
+      }
+    }
+    return false;
+  }
 
-        // Listen for real Firebase auth state changes
+  function initFirebase() {
+    if (ensureFirebase()) {
+      console.log("⚡ Ramphony Firebase Auth connected successfully.");
+
+      // Listen for real Firebase auth state changes
+      try {
         firebaseAuth.onAuthStateChanged(user => {
           if (user) {
+            const existing = getCurrentUser();
+            const photo = user.photoURL || existing?.avatar || "";
+            const cleanName = user.displayName || (user.email ? user.email.split("@")[0] : "User");
+            const cleanUser = (user.displayName || (user.email ? user.email.split("@")[0] : "user")).toLowerCase().replace(/[^a-z0-9_]/g, "");
+
             const mapped = {
               uid: user.uid,
-              email: user.email,
-              displayName: user.displayName || user.email.split("@")[0],
-              username: (user.displayName || user.email.split("@")[0]).toLowerCase().replace(/[^a-z0-9_]/g, ""),
-              avatar: user.photoURL || "",
+              email: user.email || "",
+              displayName: cleanName,
+              username: cleanUser,
+              avatar: photo,
               provider: "firebase"
             };
+            saveRegisteredAccount(mapped);
             saveSession(mapped);
           } else {
-            // Logged out in Firebase
-            if (getCurrentUser()?.provider === "firebase") {
+            const cur = getCurrentUser();
+            if (cur && (cur.provider === "firebase" || cur.provider === "google")) {
               clearSession();
             }
           }
           updateAllUI();
         });
-      } catch (err) {
-        console.warn("Firebase Auth init warning:", err);
+      } catch (e) {
+        console.warn("onAuthStateChanged setup error:", e);
       }
     }
   }
@@ -105,10 +123,29 @@
   function getCurrentUser() {
     try {
       const s = localStorage.getItem(SESSION_USER_KEY);
-      return s ? JSON.parse(s) : null;
-    } catch {
-      return null;
-    }
+      if (s) {
+        const u = JSON.parse(s);
+        if (u && (u.username || u.displayName)) return u;
+      }
+    } catch (e) {}
+
+    // Check local profile as fallback
+    try {
+      const p = localStorage.getItem(PROFILE_KEY);
+      if (p) {
+        const prof = JSON.parse(p);
+        if (prof && (prof.displayName || prof.username || prof.avatar)) {
+          return {
+            displayName: prof.displayName || prof.username || "Guest",
+            username: (prof.username || "guest").toLowerCase(),
+            avatar: prof.avatar || "",
+            isProfileOnly: true
+          };
+        }
+      }
+    } catch (e) {}
+
+    return null;
   }
 
   function saveSession(user) {
@@ -132,17 +169,12 @@
   }
 
   function clearSession() {
+    // Wipe all session & account cache for clean account switching
     localStorage.removeItem(SESSION_USER_KEY);
-    // Reset profile back to Guest
-    try {
-      const guestProfile = {
-        displayName: "Guest Listener",
-        username: "guest",
-        bio: "Login to save playlists and chat with friends.",
-        avatar: ""
-      };
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(guestProfile));
-    } catch (e) {}
+    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(REGISTERED_DB_KEY);
+    localStorage.removeItem("ramphony_user_chat_threads_v3");
+    sessionStorage.clear();
 
     window.postMessage({ type: "RAMPHONY_AUTH_CHANGE", user: null }, "*");
     updateAllUI();
@@ -163,20 +195,33 @@
 
     // If Firebase is configured and active
     if (isFirebaseReady && firebaseAuth) {
-      const cred = await firebaseAuth.createUserWithEmailAndPassword(cleanEmail, password);
-      await cred.user.updateProfile({ displayName: cleanName });
-      const user = {
-        uid: cred.user.uid,
-        email: cred.user.email,
-        displayName: cleanName,
-        username: cleanUsername,
-        avatar: "",
-        provider: "firebase"
-      };
-      saveRegisteredAccount(user);
-      saveSession(user);
-      try { if (window.firebase && window.firebase.firestore) { window.firebase.firestore().collection("users").doc(user.uid).set(user, { merge: true }); } } catch (e) {}
-      return user;
+      try {
+        const cred = await firebaseAuth.createUserWithEmailAndPassword(cleanEmail, password);
+        await cred.user.updateProfile({ displayName: cleanName });
+        const user = {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          displayName: cleanName,
+          username: cleanUsername,
+          avatar: "",
+          provider: "firebase"
+        };
+        saveRegisteredAccount(user);
+        saveSession(user);
+        try { if (window.firebase && window.firebase.firestore) { window.firebase.firestore().collection("users").doc(user.uid).set(user, { merge: true }); } } catch (e) {}
+        return user;
+      } catch (fbErr) {
+        if (fbErr.code === "auth/configuration-not-found" || fbErr.message?.includes("configuration-not-found")) {
+          throw new Error("Fitur Authentication belum aktif di Firebase Console! Buka menu Build > Authentication > klik 'Get Started' > aktifkan 'Email/Password'.");
+        }
+        if (fbErr.code === "auth/email-already-in-use") {
+          throw new Error("Email ini sudah terdaftar di Firebase. Silakan Masuk.");
+        }
+        if (fbErr.code === "auth/weak-password") {
+          throw new Error("Password terlalu lemah (minimal 6 karakter).");
+        }
+        throw fbErr;
+      }
     }
 
     // Local Mock DB Fallback
@@ -211,19 +256,29 @@
 
     // If Firebase is configured
     if (isFirebaseReady && firebaseAuth) {
-      const cred = await firebaseAuth.signInWithEmailAndPassword(term, password);
-      const user = {
-        uid: cred.user.uid,
-        email: cred.user.email,
-        displayName: cred.user.displayName || cred.user.email.split("@")[0],
-        username: (cred.user.displayName || cred.user.email.split("@")[0]).toLowerCase().replace(/[^a-z0-9_]/g, ""),
-        avatar: cred.user.photoURL || "",
-        provider: "firebase"
-      };
-      saveRegisteredAccount(user);
-      saveSession(user);
-      try { if (window.firebase && window.firebase.firestore) { window.firebase.firestore().collection("users").doc(user.uid).set(user, { merge: true }); } } catch (e) {}
-      return user;
+      try {
+        const cred = await firebaseAuth.signInWithEmailAndPassword(term, password);
+        const user = {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          displayName: cred.user.displayName || cred.user.email.split("@")[0],
+          username: (cred.user.displayName || cred.user.email.split("@")[0]).toLowerCase().replace(/[^a-z0-9_]/g, ""),
+          avatar: cred.user.photoURL || "",
+          provider: "firebase"
+        };
+        saveRegisteredAccount(user);
+        saveSession(user);
+        try { if (window.firebase && window.firebase.firestore) { window.firebase.firestore().collection("users").doc(user.uid).set(user, { merge: true }); } } catch (e) {}
+        return user;
+      } catch (fbErr) {
+        if (fbErr.code === "auth/configuration-not-found" || fbErr.message?.includes("configuration-not-found")) {
+          throw new Error("Fitur Authentication belum aktif di Firebase Console! Buka menu Build > Authentication > klik 'Get Started' > aktifkan 'Email/Password'.");
+        }
+        if (fbErr.code === "auth/user-not-found" || fbErr.code === "auth/wrong-password" || fbErr.code === "auth/invalid-credential") {
+          throw new Error("Email atau password salah.");
+        }
+        throw fbErr;
+      }
     }
 
     // Local Mock DB Fallback
@@ -242,11 +297,78 @@
 
   async function logoutAccount() {
     if (isFirebaseReady && firebaseAuth) {
-      await firebaseAuth.signOut();
+      try {
+        await firebaseAuth.signOut();
+      } catch (e) {}
     }
     clearSession();
     showToast("Berhasil keluar dari akun.");
   }
+  async function loginWithGoogle() {
+    ensureFirebase();
+    if (!window.firebase || !window.firebase.auth) {
+      throw new Error("SDK Firebase belum dimuat oleh browser. Periksa koneksi internet Anda atau refresh halaman.");
+    }
+    if (!firebaseAuth) {
+      throw new Error("Firebase Auth belum berhasil terhubung. Periksa konfigurasi Firebase.");
+    }
+
+    try {
+      const provider = new window.firebase.auth.GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      const result = await firebaseAuth.signInWithPopup(provider);
+      const user = result.user;
+
+      const cleanName = user.displayName || (user.email ? user.email.split("@")[0] : "Google User");
+      const cleanUsername = cleanName.toLowerCase().replace(/[^a-z0-9_]/g, "") || ("user_" + user.uid.slice(0, 5));
+
+      const mappedUser = {
+        uid: user.uid,
+        email: user.email || "",
+        displayName: cleanName,
+        username: cleanUsername,
+        avatar: user.photoURL || "",
+        provider: "firebase",
+        lastLogin: new Date().toISOString()
+      };
+
+      saveRegisteredAccount(mappedUser);
+      saveSession(mappedUser);
+
+      // Sinkronisasi data user ke Firestore jika Firestore aktif
+      try {
+        if (window.firebase && window.firebase.firestore) {
+          await window.firebase.firestore().collection("users").doc(user.uid).set(mappedUser, { merge: true });
+        }
+      } catch (dbErr) {
+        console.warn("Firestore user sync warning:", dbErr);
+      }
+
+      return mappedUser;
+    } catch (fbErr) {
+      console.error("Google Sign-In Error:", fbErr);
+      if (fbErr.code === "auth/popup-closed-by-user") {
+        throw new Error("Jendela login Google ditutup sebelum selesai.");
+      }
+      if (fbErr.code === "auth/cancelled-popup-request") {
+        throw new Error("Permintaan login Google sebelumnya dibatalkan.");
+      }
+      if (fbErr.code === "auth/popup-blocked") {
+        throw new Error("Pop-up login Google diblokir browser! Izinkan pop-up untuk situs ini lalu coba lagi.");
+      }
+      if (fbErr.code === "auth/unauthorized-domain") {
+        throw new Error("Domain ini belum diotorisasi di Firebase! Buka Firebase Console > Authentication > Settings > Authorized domains > Tambahkan localhost.");
+      }
+      if (fbErr.code === "auth/operation-not-allowed" || fbErr.code === "auth/configuration-not-found" || fbErr.message?.includes("configuration-not-found")) {
+        throw new Error("Provider Google belum diaktifkan di Firebase Console! Buka Firebase Console > Authentication > Sign-in method > aktifkan 'Google' dan simpan.");
+      }
+      throw new Error(fbErr.message || "Gagal masuk dengan Google.");
+    }
+  }
+
 
   /* ========================================================
      6. UI CONTROLLER (MODAL, SIDEBAR, TOPBAR)
@@ -303,64 +425,98 @@
     }
   }
 
-  function updateAllUI() {
-    const user = getCurrentUser();
+  function isRealUserLoggedIn() {
+    try {
+      const s = localStorage.getItem(SESSION_USER_KEY);
+      if (s) {
+        const u = JSON.parse(s);
+        if (u && (u.email || u.uid)) return u;
+      }
+    } catch (e) {}
+    return null;
+  }
 
-    // 1. Sidebar Account Strip
+  function updateAllUI() {
+    const user = isRealUserLoggedIn();
+
+    // Elements
+    const loginTrigger = document.getElementById("sidebar-login-trigger");
+    const userCard = document.getElementById("sidebar-user-info");
     const saName = document.getElementById("sa-name");
     const saSub = document.getElementById("sa-sub");
     const saAvatarLetter = document.getElementById("sa-avatar-letter");
     const saAvatarImg = document.getElementById("sa-avatar-img");
-    const saActionBtn = document.getElementById("sa-action-btn");
+    const saLogoutBtn = document.getElementById("sa-logout-btn");
+    const topbarAuthBtn = document.getElementById("topbar-auth-btn");
+    const topbarProfileBtn = document.getElementById("topbar-profile-btn") || document.querySelector(".profile-button");
 
     if (user) {
-      if (saName) saName.textContent = user.displayName;
-      if (saSub) saSub.textContent = `@${user.username}`;
+      // 1. USER SUDAH LOGIN:
+      // Tampilkan Profil, Sembunyikan Tombol Masuk/Daftar
+      if (loginTrigger) loginTrigger.hidden = true;
+      if (userCard) userCard.hidden = false;
+
+      // Di Topbar: Sembunyikan tombol "Masuk/Daftar", Tampilkan icon Profil
+      if (topbarAuthBtn) {
+        topbarAuthBtn.hidden = true;
+        topbarAuthBtn.style.display = "none";
+      }
+      if (topbarProfileBtn) {
+        topbarProfileBtn.hidden = false;
+        topbarProfileBtn.style.display = "flex";
+      }
+
+      if (saName) saName.textContent = user.displayName || "Pengguna";
+      if (saSub) saSub.textContent = `@${user.username || "user"}`;
+
       if (saAvatarLetter && saAvatarImg) {
         if (user.avatar) {
           saAvatarImg.src = user.avatar;
-          saAvatarImg.hidden = false;
-          saAvatarLetter.hidden = true;
+          saAvatarImg.style.display = "block";
+          saAvatarImg.removeAttribute("hidden");
+          saAvatarLetter.style.display = "none";
+          saAvatarLetter.setAttribute("hidden", "");
+          saAvatarLetter.textContent = "";
         } else {
-          saAvatarImg.hidden = true;
-          saAvatarLetter.hidden = false;
-          saAvatarLetter.textContent = user.displayName.charAt(0).toUpperCase();
+          saAvatarImg.style.display = "none";
+          saAvatarImg.setAttribute("hidden", "");
+          saAvatarImg.src = "";
+          saAvatarLetter.style.display = "flex";
+          saAvatarLetter.removeAttribute("hidden");
+          saAvatarLetter.textContent = (user.displayName || "N").charAt(0).toUpperCase();
         }
       }
-      if (saActionBtn) {
-        saActionBtn.textContent = "Keluar";
-        saActionBtn.className = "sa-action-btn sa-logout-btn";
-        saActionBtn.onclick = (e) => {
+
+      if (saLogoutBtn) {
+        saLogoutBtn.onclick = (e) => {
           e.preventDefault();
           logoutAccount();
         };
       }
     } else {
-      if (saName) saName.textContent = "Guest";
-      if (saSub) saSub.textContent = "Mode Tamu";
-      if (saAvatarLetter) {
-        saAvatarLetter.textContent = "G";
-        saAvatarLetter.hidden = false;
-      }
-      if (saAvatarImg) saAvatarImg.hidden = true;
-      if (saActionBtn) {
-        saActionBtn.textContent = "Masuk / Daftar";
-        saActionBtn.className = "sa-action-btn";
-        saActionBtn.onclick = (e) => {
+      // 2. USER BELUM LOGIN:
+      // Di Sidebar: Tampilkan tombol "Masuk/Daftar"
+      if (loginTrigger) {
+        loginTrigger.hidden = false;
+        loginTrigger.onclick = (e) => {
           e.preventDefault();
           openAuthModal("login");
         };
       }
+      if (userCard) userCard.hidden = true;
+
+      // Di Topbar: Tampilkan tombol "Masuk/Daftar", Sembunyikan icon Profil
+      if (topbarAuthBtn) {
+        topbarAuthBtn.hidden = false;
+        topbarAuthBtn.style.display = "inline-flex";
+        topbarAuthBtn.textContent = "Masuk / Daftar";
+      }
+      if (topbarProfileBtn) {
+        topbarProfileBtn.hidden = true;
+        topbarProfileBtn.style.display = "none";
+      }
     }
 
-    // 2. Topbar Login/Register indicator
-    const topbarAuthBtn = document.getElementById("topbar-auth-btn");
-    if (topbarAuthBtn) {
-      topbarAuthBtn.textContent = user ? user.displayName : "Masuk / Daftar";
-      topbarAuthBtn.title = user ? `Akun: ${user.displayName} (@${user.username})` : "Masuk atau buat akun";
-    }
-
-    // 3. Update Chat and Profile if functions available
     if (typeof window.updateChatUI === "function") {
       window.updateChatUI();
     }
@@ -382,6 +538,24 @@
   /* ========================================================
      7. ATTACH LISTENERS & INITIALIZATION
      ======================================================== */
+  // Clean cache on startup: purge stale mock accounts if logged out or without uid
+  try {
+    const s = localStorage.getItem(SESSION_USER_KEY);
+    if (!s) {
+      localStorage.removeItem(REGISTERED_DB_KEY);
+      localStorage.removeItem("ramphony_user_chat_threads_v3");
+    } else {
+      const reg = localStorage.getItem(REGISTERED_DB_KEY);
+      if (reg) {
+        const list = JSON.parse(reg);
+        if (Array.isArray(list)) {
+          const cleaned = list.filter(u => u && u.uid && u.email);
+          localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(cleaned));
+        }
+      }
+    }
+  } catch (e) {}
+
   function init() {
     initFirebase();
 
@@ -411,14 +585,10 @@
       switchAuthTab("login");
     });
 
-    // Topbar Auth Trigger
-    document.getElementById("topbar-auth-btn")?.addEventListener("click", () => {
-      const u = getCurrentUser();
-      if (u) {
-        window.location.href = "pages/profile.html";
-      } else {
-        openAuthModal("login");
-      }
+    // Topbar Auth Trigger: ALWAYS opens Auth Modal
+    document.getElementById("topbar-auth-btn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      openAuthModal("login");
     });
 
     // Password visibility toggles
@@ -434,6 +604,35 @@
             : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
         }
       });
+    });
+
+    // Google Auth Button
+    const googleBtn = document.getElementById("auth-google-btn");
+    const googleDefaultHtml = googleBtn ? googleBtn.innerHTML : "";
+    googleBtn?.addEventListener("click", async () => {
+      clearAlerts();
+      try {
+        googleBtn.disabled = true;
+        googleBtn.innerHTML = "<span>Menghubungkan ke Google...</span>";
+        const user = await loginWithGoogle();
+        showAlert(`Berhasil masuk dengan Google sebagai ${user.displayName}!`, false);
+        showToast(`Selamat datang, ${user.displayName}!`);
+        setTimeout(() => {
+          closeAuthModal();
+          googleBtn.disabled = false;
+          googleBtn.innerHTML = googleDefaultHtml;
+          if (sessionStorage.getItem("ramphony_open_chat_after_auth") === "1") {
+            sessionStorage.removeItem("ramphony_open_chat_after_auth");
+            setTimeout(() => {
+              document.getElementById("open-chat-btn")?.click();
+            }, 300);
+          }
+        }, 900);
+      } catch (err) {
+        showAlert(err.message, true);
+        googleBtn.disabled = false;
+        googleBtn.innerHTML = googleDefaultHtml;
+      }
     });
 
     // Login Form Submit
@@ -455,6 +654,13 @@
         showToast(`Berhasil masuk sebagai ${user.displayName}`);
         setTimeout(() => {
           closeAuthModal();
+          if (sessionStorage.getItem("ramphony_open_chat_after_auth") === "1") {
+            sessionStorage.removeItem("ramphony_open_chat_after_auth");
+            setTimeout(() => {
+              const chatBtn = document.getElementById("open-chat-btn");
+              chatBtn?.click();
+            }, 300);
+          }
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = "Masuk ke Ramphony";
@@ -496,6 +702,13 @@
         showToast(`Akun ${user.displayName} berhasil didaftarkan!`);
         setTimeout(() => {
           closeAuthModal();
+          if (sessionStorage.getItem("ramphony_open_chat_after_auth") === "1") {
+            sessionStorage.removeItem("ramphony_open_chat_after_auth");
+            setTimeout(() => {
+              const chatBtn = document.getElementById("open-chat-btn");
+              chatBtn?.click();
+            }, 300);
+          }
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = "Buat Akun Ramphony";
@@ -516,12 +729,20 @@
 
   // Expose to global window
   window.RamphonyAuth = {
+    isReady: () => isFirebaseReady,
+    getCurrentUser: getCurrentUser,
+    register: registerAccount,
+    login: loginAccount,
+    loginWithGoogle: loginWithGoogle,
+    logout: logoutAccount,
     openModal: openAuthModal,
     closeModal: closeAuthModal,
-    getCurrentUser: getCurrentUser,
-    logout: logoutAccount,
     updateUI: updateAllUI
   };
+
+  window.loginWithGoogle = loginWithGoogle;
+  window.openAuthModal = openAuthModal;
+  window.isUserLoggedIn = () => !!localStorage.getItem(SESSION_USER_KEY);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

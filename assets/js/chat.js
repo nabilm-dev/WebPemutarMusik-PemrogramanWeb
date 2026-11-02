@@ -64,7 +64,11 @@
   /* Listen to internal auth changes */
   window.addEventListener("message", event => {
     const data = event.data;
-    if (data && (data.type === "RAMPHONY_AUTH_LOGIN" || data.type === "RAMPHONY_PROFILE_UPDATED")) {
+    if (data && (data.type === "RAMPHONY_AUTH_LOGIN" || data.type === "RAMPHONY_PROFILE_UPDATED" || data.type === "RAMPHONY_AUTH_CHANGE")) {
+      if (!data.user) {
+        activeRecipientUsername = null;
+        closeChat();
+      }
       updateGreeting();
       renderInbox();
     }
@@ -78,10 +82,12 @@
       const s = localStorage.getItem(SESSION_USER_KEY);
       if (s) {
         const u = JSON.parse(s);
-        if (u && (u.username || u.displayName)) {
+        if (u && (u.username || u.displayName || u.email)) {
           return {
-            username: String(u.username || "nabil").toLowerCase().trim(),
-            displayName: String(u.displayName || u.username || "Nabil").trim(),
+            uid: u.uid || "",
+            email: String(u.email || "").toLowerCase().trim(),
+            username: String(u.username || "").toLowerCase().trim(),
+            displayName: String(u.displayName || u.username || (u.email ? u.email.split("@")[0] : "User")).trim(),
             avatar: u.avatar || ""
           };
         }
@@ -94,8 +100,10 @@
         const parsed = JSON.parse(p);
         if (parsed && (parsed.username || parsed.displayName)) {
           return {
-            username: String(parsed.username || "nabil").toLowerCase().trim(),
-            displayName: String(parsed.displayName || parsed.username || "Nabil").trim(),
+            uid: "",
+            email: String(parsed.email || "").toLowerCase().trim(),
+            username: String(parsed.username || "").toLowerCase().trim(),
+            displayName: String(parsed.displayName || parsed.username || "User").trim(),
             avatar: parsed.avatar || ""
           };
         }
@@ -103,8 +111,10 @@
     } catch (e) {}
 
     return {
-      username: "nabil",
-      displayName: "Nabil",
+      uid: "",
+      email: "",
+      username: "",
+      displayName: "User",
       avatar: ""
     };
   }
@@ -115,42 +125,20 @@
       const s = localStorage.getItem(REGISTERED_DB_KEY);
       if (s) {
         const parsed = JSON.parse(s);
-        if (Array.isArray(parsed)) list = parsed;
+        if (Array.isArray(parsed)) {
+          // Strictly real registered users (must have valid email or uid, filter out dummy mock accounts)
+          list = parsed.filter(u => {
+            if (!u || !u.username) return false;
+            const uname = String(u.username).toLowerCase().trim();
+            if (["teman", "budi", "fajar", "guest"].includes(uname)) return false;
+            if (String(u.id || "").startsWith("usr_")) return false;
+            // Must have email or uid (real accounts only)
+            if (!u.email && !u.uid) return false;
+            return true;
+          });
+        }
       }
     } catch (e) {}
-
-    // Seed real initial user accounts if fresh database
-    if (list.length === 0) {
-      list = [
-        {
-          id: "usr_teman",
-          username: "teman",
-          displayName: "Teman Ramphony",
-          email: "teman@ramphony.app",
-          avatar: "",
-          online: true
-        },
-        {
-          id: "usr_budi",
-          username: "budi",
-          displayName: "Budi Santoso",
-          email: "budi@ramphony.app",
-          avatar: "",
-          online: true
-        },
-        {
-          id: "usr_fajar",
-          username: "fajar",
-          displayName: "Fajar Ramadhan",
-          email: "fajar@ramphony.app",
-          avatar: "",
-          online: false
-        }
-      ];
-      try {
-        localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(list));
-      } catch (e) {}
-    }
 
     return list;
   }
@@ -172,23 +160,7 @@
         if (data && typeof data === "object") return data;
       }
     } catch (e) {}
-
-    // Initial greeting message for first test thread
-    const initialThreads = {};
-    const key = getThreadKey("nabil", "teman");
-    initialThreads[key] = [
-      {
-        id: "msg_init_1",
-        sender: "teman",
-        text: "Halo! Akun real user Ramphony aktif. Kirim pesan ke sesama user di sini ya!",
-        time: "10:00",
-        timestamp: Date.now() - 600000
-      }
-    ];
-    try {
-      localStorage.setItem(THREADS_KEY, JSON.stringify(initialThreads));
-    } catch (e) {}
-    return initialThreads;
+    return {};
   }
 
   function saveAllThreads(threads) {
@@ -225,8 +197,15 @@
     const allUsers = getRegisteredUsers();
     const threads = getAllThreads();
 
-    // Filter out yourself: you chat with OTHER real users!
-    let otherUsers = allUsers.filter(u => u.username.toLowerCase() !== me.username.toLowerCase());
+    // Filter out yourself: you chat strictly with OTHER real users!
+    let otherUsers = allUsers.filter(u => {
+      if (!u) return false;
+      if (me.uid && u.uid && me.uid === u.uid) return false;
+      if (me.email && u.email && me.email.toLowerCase() === String(u.email).toLowerCase()) return false;
+      if (me.username && u.username && me.username.toLowerCase() === String(u.username).toLowerCase()) return false;
+      if (me.displayName && u.displayName && me.displayName.toLowerCase() === String(u.displayName).toLowerCase()) return false;
+      return true;
+    });
 
     // Apply search filter
     if (currentSearch) {
@@ -375,12 +354,50 @@
       const row = document.createElement("div");
       row.className = `chat-msg-row ${isMe ? "me" : "them"}`;
 
-      row.innerHTML = `
-        <div class="chat-bubble">
-          <div class="chat-msg-text">${escapeHtml(msg.text)}</div>
-          <span class="chat-msg-time">${escapeHtml(msg.time || "")}</span>
-        </div>
-      `;
+      if (msg.isSongShare && msg.songData) {
+        const s = msg.songData;
+        const initial = (s.title || s.name || "♪").charAt(0).toUpperCase();
+        const artHtml = s.artwork
+          ? `<img src="${escapeHtml(s.artwork)}" class="chat-song-cover-img" alt="Cover" />`
+          : `<div class="chat-song-cover-placeholder">${escapeHtml(initial)}</div>`;
+
+        row.innerHTML = `
+          <div class="chat-bubble chat-bubble-song">
+            <div class="chat-song-topbar">
+              <span class="chat-song-badge">🎵 Musik Dibagikan</span>
+              <span class="chat-song-tag">${escapeHtml(s.tag || 'Audio')}</span>
+            </div>
+            <div class="chat-song-body">
+              <div class="chat-song-art">
+                ${artHtml}
+              </div>
+              <div class="chat-song-info">
+                <strong class="chat-song-title">${escapeHtml(s.title || s.name)}</strong>
+                <span class="chat-song-artist">${escapeHtml(s.artist || 'Ramphony Audio')}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="chat-song-play-action-btn"
+              data-track='${encodeURIComponent(JSON.stringify(s))}'
+              title="Dengarkan Lagu Ini di Player Ramphony"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span>Dengarkan Sekarang</span>
+            </button>
+            <span class="chat-msg-time">${escapeHtml(msg.time || "")}</span>
+          </div>
+        `;
+      } else {
+        row.innerHTML = `
+          <div class="chat-bubble">
+            <div class="chat-msg-text">${escapeHtml(msg.text)}</div>
+            <span class="chat-msg-time">${escapeHtml(msg.time || "")}</span>
+          </div>
+        `;
+      }
 
       list.appendChild(row);
     });
@@ -393,6 +410,164 @@
     if (list) {
       list.scrollTop = list.scrollHeight;
     }
+  }
+
+  
+  /* ========================================================
+     MUSIC SHARING ("SHARE IT" FEATURE)
+     ======================================================== */
+  function sendSongMessage(trackData) {
+    if (!trackData || !activeRecipientUsername) return;
+    const me = getCurrentUser();
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    const newMsg = {
+      id: "msg_song_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+      sender: me.username,
+      recipient: activeRecipientUsername,
+      text: "🎵 Membagikan lagu: " + (trackData.name || trackData.title),
+      isSongShare: true,
+      songData: {
+        name: trackData.name || trackData.title || "Lagu Ramphony",
+        title: trackData.title || trackData.name || "Lagu Ramphony",
+        artist: trackData.artist || (trackData.tag === "Demo" ? "Demo Track" : "Ramphony Music"),
+        src: trackData.src || "",
+        previewSrc: trackData.previewSrc || "",
+        artwork: trackData.artwork || "",
+        videoId: trackData.videoId || "",
+        isYouTube: Boolean(trackData.isYouTube),
+        tag: trackData.tag || "Shared"
+      },
+      time: timeStr,
+      timestamp: Date.now()
+    };
+
+    // Save to pair thread
+    const threads = getAllThreads();
+    const threadKey = getThreadKey(me.username, activeRecipientUsername);
+    if (!threads[threadKey]) threads[threadKey] = [];
+    threads[threadKey].push(newMsg);
+    saveAllThreads(threads);
+
+    renderMessages(activeRecipientUsername);
+
+    // Broadcast message to other tabs / devices (Real User Sync)
+    if (broadcastChannel) {
+      try {
+        broadcastChannel.postMessage({
+          type: "RAMPHONY_REAL_USER_MSG",
+          threadKey: threadKey,
+          message: newMsg
+        });
+      } catch (e) {}
+    }
+
+    // Sync to Firestore if Firebase is ready
+    if (firestoreDb) {
+      firestoreDb
+        .collection("chat_messages")
+        .add(newMsg)
+        .catch(err => console.warn("Firestore sync error:", err));
+    }
+
+    // Close drawer
+    const drawer = document.getElementById("chat-music-drawer");
+    if (drawer) drawer.hidden = true;
+
+    showToast(`🎵 Lagu "${trackData.name || trackData.title}" berhasil dibagikan!`);
+  }
+
+  function toggleMusicDrawer() {
+    const drawer = document.getElementById("chat-music-drawer");
+    if (!drawer) return;
+
+    if (drawer.hidden) {
+      populateMusicDrawer();
+      drawer.hidden = false;
+    } else {
+      drawer.hidden = true;
+    }
+  }
+
+  function populateMusicDrawer() {
+    const currentTitleEl = document.getElementById("cmd-current-title");
+    const sendCurrentBtn = document.getElementById("cmd-send-current-btn");
+    const playlistContainer = document.getElementById("cmd-playlist-list");
+
+    // 1. Check currently playing track in Ramphony
+    let curTrack = null;
+    if (window.RamphonyPlayer && typeof window.RamphonyPlayer.getCurrentTrack === "function") {
+      curTrack = window.RamphonyPlayer.getCurrentTrack();
+    }
+
+    if (curTrack && curTrack.name) {
+      if (currentTitleEl) currentTitleEl.textContent = curTrack.name;
+      if (sendCurrentBtn) {
+        sendCurrentBtn.disabled = false;
+        sendCurrentBtn.style.opacity = "1";
+        sendCurrentBtn.onclick = () => sendSongMessage(curTrack);
+      }
+    } else {
+      if (currentTitleEl) currentTitleEl.textContent = "Belum ada lagu diputar di player";
+      if (sendCurrentBtn) {
+        sendCurrentBtn.disabled = true;
+        sendCurrentBtn.style.opacity = "0.5";
+      }
+    }
+
+    // 2. Populate available playlist tracks
+    if (!playlistContainer) return;
+    playlistContainer.innerHTML = "";
+
+    let allTracks = [];
+    if (window.RamphonyPlayer && typeof window.RamphonyPlayer.getAllTracks === "function") {
+      allTracks = window.RamphonyPlayer.getAllTracks();
+    }
+
+    // Default demo tracks if playlist is empty
+    if (!allTracks || allTracks.length === 0) {
+      allTracks = [
+        {
+          name: "Rex Orange County - Best Friend",
+          title: "Best Friend",
+          artist: "Rex Orange County",
+          src: encodeURI("demolagu/Rex Orange County - Best Friend.mp3"),
+          tag: "Demo"
+        },
+        {
+          name: "Rex Orange County - Hannah Montana",
+          title: "Hannah Montana",
+          artist: "Rex Orange County",
+          src: encodeURI("demolagu/Rex Orange County - Hannah Montana.mp3"),
+          tag: "Demo"
+        }
+      ];
+    }
+
+    allTracks.forEach(t => {
+      const item = document.createElement("div");
+      item.className = "cmd-track-item";
+      const songTitle = t.title || t.name || "Lagu Ramphony";
+      const songArtist = t.artist || (t.tag === "Demo" ? "Demo Artist" : "Ramphony Music");
+
+      item.innerHTML = `
+        <div class="cmd-track-left">
+          <div class="cmd-track-disc">♪</div>
+          <div class="cmd-track-meta">
+            <span class="cmd-track-name" title="${escapeHtml(songTitle)}">${escapeHtml(songTitle)}</span>
+            <small class="cmd-track-artist">${escapeHtml(songArtist)}</small>
+          </div>
+        </div>
+        <button type="button" class="cmd-track-share-btn">Bagikan</button>
+      `;
+
+      item.querySelector(".cmd-track-share-btn").onclick = () => {
+        sendSongMessage(t);
+      };
+
+      playlistContainer.appendChild(item);
+    });
   }
 
   function sendMessage(text) {
@@ -444,25 +619,63 @@
   }
 
   function handleIncomingBroadcast(data) {
-    if (!data || data.type !== "RAMPHONY_REAL_USER_MSG") return;
-    const { threadKey, message } = data;
-    if (threadKey && message) {
-      const threads = getAllThreads();
-      if (!threads[threadKey]) threads[threadKey] = [];
-      if (!threads[threadKey].some(m => m.id === message.id)) {
-        threads[threadKey].push(message);
-        saveAllThreads(threads);
+    if (!data) return;
 
-        if (activeRecipientUsername) {
-          const me = getCurrentUser();
-          const currentKey = getThreadKey(me.username, activeRecipientUsername);
-          if (currentKey === threadKey) {
-            renderMessages(activeRecipientUsername);
+    // A. Real-time message sync across tabs
+    if (data.type === "RAMPHONY_REAL_USER_MSG") {
+      const { threadKey, message } = data;
+      if (threadKey && message) {
+        const threads = getAllThreads();
+        if (!threads[threadKey]) threads[threadKey] = [];
+        if (!threads[threadKey].some(m => m.id === message.id)) {
+          threads[threadKey].push(message);
+          saveAllThreads(threads);
+
+          if (activeRecipientUsername) {
+            const me = getCurrentUser();
+            const currentKey = getThreadKey(me.username, activeRecipientUsername);
+            if (currentKey === threadKey) {
+              renderMessages(activeRecipientUsername);
+            }
           }
+          renderInbox();
+          checkUnreadNotification();
         }
-        renderInbox();
-        checkUnreadNotification();
       }
+      return;
+    }
+
+    // B. Automatic user discovery across tabs
+    if (data.type === "RAMPHONY_DISCOVER_USERS" && data.user) {
+      const me = getCurrentUser();
+      const currentList = getRegisteredUsers();
+      if (data.user.username && data.user.username.toLowerCase() !== me.username.toLowerCase()) {
+        const idx = currentList.findIndex(x => x.username.toLowerCase() === data.user.username.toLowerCase());
+        if (idx < 0) {
+          currentList.push(data.user);
+          localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(currentList));
+          renderInbox();
+        }
+        // Reply with our own identity so the other tab also discovers us
+        if (me.username && broadcastChannel) {
+          broadcastChannel.postMessage({ type: "RAMPHONY_ANNOUNCE_USER", user: me });
+        }
+      }
+      return;
+    }
+
+    if (data.type === "RAMPHONY_ANNOUNCE_USER" && data.user) {
+      const me = getCurrentUser();
+      const currentList = getRegisteredUsers();
+      if (data.user.username && data.user.username.toLowerCase() !== me.username.toLowerCase()) {
+        const idx = currentList.findIndex(x => x.username.toLowerCase() === data.user.username.toLowerCase());
+        if (idx < 0) {
+          currentList.push(data.user);
+          localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(currentList));
+          renderInbox();
+        }
+      }
+      return;
     }
   }
 
@@ -477,6 +690,24 @@
      6. MODAL CONTROLLERS (AUDIO PLAYBACK IS NEVER PAUSED!)
      ======================================================== */
   function openChat() {
+    // CHAT REQUIRES AUTHENTICATED USER
+    let user = null;
+    try {
+      const s = localStorage.getItem("ramphony_user");
+      if (s) user = JSON.parse(s);
+    } catch (e) {}
+
+    if (!user || !user.email) {
+      sessionStorage.setItem("ramphony_open_chat_after_auth", "1");
+      if (typeof window.openAuthModal === "function") {
+        window.openAuthModal("login", "Silakan Masuk atau Buat Akun terlebih dahulu untuk menggunakan Chat Room.");
+      } else {
+        const topbarAuth = document.getElementById("topbar-auth-btn");
+        topbarAuth?.click();
+      }
+      return;
+    }
+
     const modal = document.getElementById("chat-modal");
     if (!modal) return;
 
@@ -542,30 +773,35 @@
           }
         });
 
-      // Also sync registered users from Firestore in real-time
+      // Automatic user discovery: sync all registered users from Firestore in real-time
       firestoreDb
         .collection("users")
-        .limit(100)
+        .limit(150)
         .onSnapshot(snapshot => {
-          let updated = false;
-          const currentList = getRegisteredUsers();
-          snapshot.docChanges().forEach(change => {
-            if (change.type === "added" || change.type === "modified") {
-              const u = change.doc.data();
-              if (u && u.username) {
-                const idx = currentList.findIndex(x => x.username.toLowerCase() === u.username.toLowerCase());
-                if (idx >= 0) {
-                  currentList[idx] = { ...currentList[idx], ...u };
-                } else {
-                  currentList.push(u);
-                  updated = true;
-                }
-              }
+          const remoteUsers = [];
+          snapshot.forEach(doc => {
+            const u = doc.data();
+            if (u && (u.username || u.displayName)) {
+              remoteUsers.push(u);
             }
           });
-          if (updated) {
-            localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(currentList));
-            renderInbox();
+
+          if (remoteUsers.length > 0) {
+            const currentList = getRegisteredUsers();
+            let changed = false;
+            remoteUsers.forEach(ru => {
+              const idx = currentList.findIndex(x => x.username.toLowerCase() === ru.username.toLowerCase());
+              if (idx >= 0) {
+                currentList[idx] = { ...currentList[idx], ...ru };
+              } else {
+                currentList.push(ru);
+                changed = true;
+              }
+            });
+            if (changed) {
+              localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(currentList));
+              renderInbox();
+            }
           }
         }, err => {
           // Silent fallback if rules or collection not initialized yet
@@ -588,6 +824,51 @@
   /* ========================================================
      8. INITIALIZATION & LISTENERS
      ======================================================== */
+  
+  // Purge any legacy dummy accounts & dummy threads from localStorage
+  try {
+    const me = getCurrentUser();
+    const s = localStorage.getItem(REGISTERED_DB_KEY);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) {
+        const cleaned = parsed.filter(u => {
+          if (!u || !u.username) return false;
+          const uname = String(u.username).toLowerCase().trim();
+          if (["teman", "budi", "fajar", "guest"].includes(uname)) return false;
+          if (String(u.id || "").startsWith("usr_")) return false;
+          // If account has no email and no uid, it is an old mock account -> purge it
+          if (!u.email && !u.uid) return false;
+          // If it matches current user, keep in registered but don't duplicate
+          return true;
+        });
+        localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(cleaned));
+      }
+    }
+
+    // Clean mock threads from earlier test sessions
+    const t = localStorage.getItem(THREADS_KEY);
+    if (t) {
+      const threads = JSON.parse(t);
+      let changed = false;
+      Object.keys(threads).forEach(key => {
+        if (
+          key.includes("teman") ||
+          key.includes("budi") ||
+          key.includes("fajar") ||
+          key === "nabil__thread__nabil" ||
+          key.includes("__thread__teman")
+        ) {
+          delete threads[key];
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem(THREADS_KEY, JSON.stringify(threads));
+      }
+    }
+  } catch (e) {}
+
   function init() {
     // Topbar Open Button
     const openBtn = document.getElementById("open-chat-btn");
@@ -643,6 +924,45 @@
         closeChat();
       }
     });
+
+    
+    // Music Sharing Drawer triggers
+    document.getElementById("chat-share-music-btn")?.addEventListener("click", toggleMusicDrawer);
+    document.getElementById("cmd-close-btn")?.addEventListener("click", () => {
+      const drawer = document.getElementById("chat-music-drawer");
+      if (drawer) drawer.hidden = true;
+    });
+
+    // Delegate play shared song in chat list
+    document.getElementById("chat-messages-list")?.addEventListener("click", e => {
+      const playBtn = e.target.closest(".chat-song-play-action-btn");
+      if (playBtn) {
+        const raw = playBtn.getAttribute("data-track");
+        if (raw) {
+          try {
+            const track = JSON.parse(decodeURIComponent(raw));
+            if (typeof window.playFromExternal === "function") {
+              window.playFromExternal(track, false);
+            } else if (window.RamphonyPlayer && typeof window.RamphonyPlayer.playTrack === "function") {
+              window.RamphonyPlayer.playTrack(track);
+            }
+            showToast(`🎵 Memutar lagu: ${track.title || track.name}`);
+            playBtn.classList.add("playing-pulse");
+            setTimeout(() => playBtn.classList.remove("playing-pulse"), 1500);
+          } catch (err) {
+            console.error("Failed to play shared track:", err);
+          }
+        }
+      }
+    });
+
+    // Broadcast discovery when chat opens
+    if (broadcastChannel) {
+      const me = getCurrentUser();
+      if (me.username) {
+        broadcastChannel.postMessage({ type: "RAMPHONY_DISCOVER_USERS", user: me });
+      }
+    }
 
     initFirebase();
     renderInbox();

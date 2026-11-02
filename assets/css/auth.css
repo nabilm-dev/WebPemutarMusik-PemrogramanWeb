@@ -330,13 +330,14 @@
 }
 
 .sa-avatar-wrap {
-  width: 34px;
-  height: 34px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--green, #b5e4bf);
   color: #071b12;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -345,9 +346,40 @@
 }
 
 .sa-avatar-img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  z-index: 2;
+}
+
+.sa-avatar-img[hidden],
+.sa-avatar-img[style*="display: none"] {
+  display: none !important;
+}
+
+.sa-avatar-letter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #071b12;
+  z-index: 1;
+}
+
+.sa-avatar-letter[hidden],
+.sa-avatar-letter[style*="display: none"] {
+  display: none !important;
 }
 
 .sa-user-info {
@@ -449,4 +481,157 @@
   border-color: rgba(181, 228, 191, 0.35);
   color: var(--green, #b5e4bf);
   transform: scale(1.05);
+}
+
+/* SIDEBAR SPACER & AUTH CARDS POSITIONING */
+.sidebar .side-nav {
+  margin-bottom: 38px !important;
+  padding-bottom: 6px;
+}
+
+/* SIDEBAR LOGIN CARD (WHEN NOT LOGGED IN) */
+.sidebar-login-card {
+  width: 100%;
+  margin-top: auto !important;
+  margin-bottom: 14px !important;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(181, 228, 191, 0.08);
+  border: 1px solid rgba(181, 228, 191, 0.28);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-login-card:hover {
+  background: rgba(181, 228, 191, 0.16);
+  border-color: var(--green, #b5e4bf);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(181, 228, 191, 0.25);
+}
+
+.slc-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--green, #b5e4bf);
+  color: #071b12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.slc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.slc-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.slc-sub {
+  font-size: 10px;
+  color: var(--green, #b5e4bf);
+  opacity: 0.85;
+}
+
+.slc-arrow {
+  color: var(--green, #b5e4bf);
+  font-size: 14px;
+  font-weight: bold;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-login-card:hover .slc-arrow {
+  transform: translateX(3px);
+}
+
+/* SIDEBAR USER CARD (WHEN LOGGED IN) */
+.sidebar-user-card {
+  width: 100%;
+  margin-top: auto !important;
+  margin-bottom: 14px !important;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(181, 228, 191, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* AUTH DIVIDER */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 18px 0 14px;
+  color: #7d9688;
+  font-size: 11px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(181, 228, 191, 0.15);
+}
+
+.auth-divider span {
+  padding: 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* GOOGLE SIGN-IN BUTTON */
+.auth-google-btn {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #1f1f1f;
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  margin-bottom: 12px;
+}
+
+.auth-google-btn:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.auth-google-btn:active {
+  transform: translateY(1px);
+}
+
+.google-svg {
+  flex-shrink: 0;
+}
+
+.profile-button[hidden],
+.topbar-auth-pill[hidden] {
+  display: none !important;
 }

@@ -1306,6 +1306,11 @@ function playFromExternal(item, switchHome = false) {
 }
 
 window.playFromExternal = playFromExternal;
+window.RamphonyPlayer = {
+  getCurrentTrack: () => (cur >= 0 && tracks[cur] ? tracks[cur] : null),
+  getAllTracks: () => tracks || [],
+  playTrack: (item) => playFromExternal(item, false)
+};
 window.saveExternalToPlaylist = function(item) {
   if (!item || !item.name) return;
   const existing = tracks.some(t => t.name === item.name);
