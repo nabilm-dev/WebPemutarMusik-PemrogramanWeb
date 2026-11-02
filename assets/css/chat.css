@@ -1,3 +1,8 @@
+/* Universal box sizing for chat */
+.chat-modal-overlay, .chat-modal-overlay * {
+  box-sizing: border-box !important;
+}
+
 /* ========================================================
    RAMPHONY CHAT OVERLAY - DARK-MINT GLASS & CONTACT SELECTOR
    Matches Ramphony's Signature Hi-Fi Dark & Mint Green Palette
@@ -556,13 +561,15 @@
 .chat-convo-bottom {
   padding: 10px 16px 16px 16px;
   background: transparent;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chat-input-pill {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(181, 228, 191, 0.25);
   border-radius: 999px;
-  padding: 5px 5px 5px 16px;
+  padding: 5px 6px 5px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -570,6 +577,11 @@
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transition: border-color 0.2s;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .chat-input-pill:focus-within {
@@ -577,13 +589,16 @@
 }
 
 .chat-input-field {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0 !important;
+  width: 0 !important;
   border: none;
   outline: none;
   background: transparent;
   color: #ffffff;
   font-size: 13.5px;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .chat-input-field::placeholder {
@@ -651,7 +666,7 @@
 /* ========================================================
    RESPONSIVE DESIGN (MOBILE FULLSCREEN ADAPTATION)
    ======================================================== */
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .chat-modal-overlay {
     padding: 0 !important;
     align-items: stretch !important;
@@ -720,19 +735,43 @@
   }
 
   .chat-convo-bottom {
-    padding: 8px 12px max(12px, env(safe-area-inset-bottom, 0px)) 12px !important;
-    background: #0d150f !important;
-    border-top: 1px solid rgba(181, 228, 191, 0.14) !important;
-  }
+  padding: 10px 16px 16px 16px;
+  background: transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
 
   .chat-input-pill {
-    padding: 4px 6px 4px 14px !important;
-    gap: 8px !important;
-  }
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(181, 228, 191, 0.25);
+  border-radius: 999px;
+  padding: 5px 6px 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
 
   .chat-input-field {
-    font-size: 14px !important;
-  }
+  flex: 1 1 auto;
+  min-width: 0 !important;
+  width: 0 !important;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
 
   .chat-send-btn {
     width: 36px !important;
@@ -1125,4 +1164,47 @@
 @keyframes pulseGlow {
   from { box-shadow: 0 0 6px #2ed573; }
   to { box-shadow: 0 0 16px #2ed573; }
+}
+
+/* SHARED SONG ACTION BUTTONS (PLAY + DOWNLOAD) */
+.chat-song-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-song-actions-row .chat-song-play-action-btn {
+  flex: 1;
+}
+
+.chat-song-dl-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(181, 228, 191, 0.3);
+  color: #b5e4bf;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.chat-song-dl-btn:hover {
+  background: rgba(181, 228, 191, 0.2);
+  border-color: #b5e4bf;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.chat-song-dl-btn:active {
+  transform: translateY(1px);
 }

@@ -899,14 +899,6 @@ audio.addEventListener("error", () => {
     audio.play().catch(err => console.warn("Retry failed:", err));
     return;
   }
-  if (audio.src && !audio.src.includes("demolagu/")) {
-    console.log("Cross-device fallback: memutar audio demo...");
-    audio.removeAttribute("crossorigin");
-    audio.src = encodeURI("demolagu/Rex Orange County - Best Friend.mp3");
-    audio.load();
-    audio.play().catch(err => console.warn("Demo fallback failed:", err));
-    return;
-  }
   updateState(false);
 });
 
@@ -1279,34 +1271,42 @@ function renderHistory() {
 /* ===== PLAY FROM EXTERNAL VIEW ===== */
 
 function playFromExternal(item, switchHome = false) {
-  if (!item || !item.name) return;
+  if (!item || (!item.name && !item.title)) return;
 
-  // Cross-device safety: if src is a blob from another device or missing, fallback to demo audio
-  if (item.src && item.src.startsWith("blob:") && !item.src.includes(location.host)) {
-    item.src = encodeURI("demolagu/Rex Orange County - Best Friend.mp3");
-  }
+  const targetName = (item.name || item.title || "").toLowerCase().trim();
+  const targetClean = targetName.replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "").trim();
 
-  const existingIdx = tracks.findIndex(t => t.name === item.name);
+  // 1. CARI DULU DI CACHE / LIBRARY LOKAL PERANGKAT INI
+  let existingIdx = tracks.findIndex(t => {
+    const tName = (t.name || t.title || "").toLowerCase().trim();
+    const tClean = tName.replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "").trim();
+    return tName === targetName || tClean === targetClean || tName.includes(targetClean) || targetClean.includes(tClean);
+  });
+
   let targetIdx;
 
   if (existingIdx >= 0) {
-    if (item.src) tracks[existingIdx].src = item.src;
-    if (item.tag) tracks[existingIdx].tag = item.tag;
-    if (item.artwork) tracks[existingIdx].artwork = item.artwork;
-    if (item.videoId) tracks[existingIdx].videoId = item.videoId;
-    if (item.isYouTube !== undefined) tracks[existingIdx].isYouTube = item.isYouTube;
-    if (item.previewSrc) tracks[existingIdx].previewSrc = item.previewSrc;
+    // LAGU ADA DI CACHE PERANGKAT INI: PAKAI FILE AUDIO LOKAL KITA SENDIRI!
+    // JANGAN PERNAH MENIMPA src LOKAL KITA DENGAN URL DARI PERANGKAT LAIN!
     targetIdx = existingIdx;
+    console.log("Memutar lagu dari cache lokal perangkat:", tracks[existingIdx].name);
   } else {
+    // Lagu belum ada di antrean: buat entri baru
+    let safeSrc = item.src || "";
+    // Jika src adalah blob URL dari host/perangkat lain yang tidak bisa diakses
+    if (safeSrc.startsWith("blob:") && !safeSrc.includes(location.host)) {
+      safeSrc = encodeURI("demolagu/Rex Orange County - Best Friend.mp3");
+    }
+
     tracks.push({
-      name: item.name,
+      name: item.name || item.title,
       title: item.title || item.name,
       artist: item.artist || "",
-      src: item.src || "",
-      tag: item.tag || "Online HQ",
+      src: safeSrc,
+      tag: item.tag || "Shared Track",
       artwork: item.artwork || null,
       videoId: item.videoId || null,
-      isYouTube: item.isYouTube !== undefined ? item.isYouTube : Boolean(item.videoId || !item.src),
+      isYouTube: item.isYouTube !== undefined ? item.isYouTube : Boolean(item.videoId || !safeSrc),
       previewSrc: item.previewSrc || null
     });
     render();
