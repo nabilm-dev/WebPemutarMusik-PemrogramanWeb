@@ -598,7 +598,7 @@
     })();
   </script>
 
-  <!-- OVERLAY NAVIGATION: when inside profile iframe -->
+    <!-- OVERLAY NAVIGATION: when inside profile iframe -->
   <script>
     (function () {
       "use strict";
@@ -607,7 +607,11 @@
       if (!isEmbedded) return;
 
       function sendToParent(type) {
-        window.parent.postMessage({ type: type }, window.location.origin);
+        if (window.parent && window.parent !== window) {
+          try {
+            window.parent.postMessage({ type: type }, "*");
+          } catch (e) {}
+        }
       }
 
       document.addEventListener('click', function (event) {
@@ -615,13 +619,9 @@
         if (!link) return;
         const href = link.getAttribute('href');
         if (!href) return;
-        let url;
-        try { url = new URL(href, document.baseURI); } catch { return; }
-        if (url.origin !== location.origin) return;
-        const path = url.pathname;
 
         /* Brand logo / any home link -> close overlay */
-        if (path.endsWith('/index.html')) {
+        if (link.classList.contains('back-btn') || href.includes('index.html')) {
           event.preventDefault();
           event.stopImmediatePropagation();
           sendToParent('RAMPHONY_CLOSE_PROFILE');
@@ -629,8 +629,8 @@
         }
 
         /* <- My Profile -> navigate back inside the same iframe */
-        if (path.endsWith('/pages/profile.html')) {
-          /* normal in-iframe navigation, music unaffected */
+        if (href.includes('profile.html')) {
+          /* normal in-iframe navigation */
           return;
         }
       }, true);

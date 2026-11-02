@@ -12,7 +12,7 @@
   <div class="app">
 
     <header class="topbar">
-      <a href="../index.html" class="back-btn">Back to Player</a>
+      <a href="../index.html" class="back-btn" id="back-to-player-btn">Back to Player</a>
     </header>
 
     <main class="container">
@@ -46,6 +46,9 @@
             <a href="form-data.html" class="edit-btn">
               ✎ Edit Profile
             </a>
+            <button type="button" id="auth-action-btn" class="edit-btn" style="cursor: pointer; background: rgba(235, 87, 87, 0.12); color: #ff8585; border: 1px solid rgba(235, 87, 87, 0.3);">
+              Keluar (Logout)
+            </button>
           </div>
         </div>
       </section>
@@ -169,6 +172,38 @@
           const favElem = document.getElementById("total-favorites");
           if (favElem) favElem.textContent = Array.isArray(favs) ? favs.length : 0;
 
+          // Auth Action Button state (Login vs Logout)
+          const authBtn = document.getElementById("auth-action-btn");
+          const user = JSON.parse(localStorage.getItem("ramphony_user") || "null");
+          if (authBtn) {
+            if (user) {
+              authBtn.textContent = "Keluar (Logout)";
+              authBtn.style.color = "#ff8585";
+              authBtn.style.background = "rgba(235, 87, 87, 0.12)";
+              authBtn.style.borderColor = "rgba(235, 87, 87, 0.3)";
+              authBtn.onclick = () => {
+                localStorage.removeItem("ramphony_user");
+                const guest = {
+                  displayName: "Guest Listener",
+                  username: "guest",
+                  bio: "Login to save playlists and chat with friends.",
+                  avatar: ""
+                };
+                localStorage.setItem(PROFILE_KEY, JSON.stringify(guest));
+                loadProfile();
+                window.postMessage({ type: "RAMPHONY_AUTH_CHANGE", user: null }, "*");
+              };
+            } else {
+              authBtn.textContent = "Masuk / Daftar";
+              authBtn.style.color = "#b5e4bf";
+              authBtn.style.background = "rgba(181, 228, 191, 0.12)";
+              authBtn.style.borderColor = "rgba(181, 228, 191, 0.3)";
+              authBtn.onclick = () => {
+                window.location.href = "../index.html";
+              };
+            }
+          }
+
           document.getElementById("bio").textContent =
             profile.bio || "Your music story starts here...";
 
@@ -250,17 +285,21 @@
         });
       }
 
-      /* ===== FOLDER GROUPS ===== */
+      /* ===== PLAYLISTS COUNT ===== */
 
-      function getGroups() {
+      function getPlaylistsCount() {
         try {
-          const saved = JSON.parse(
+          const custom = JSON.parse(
+            localStorage.getItem("ramphony_custom_playlists_v1") || "[]"
+          );
+          const groups = JSON.parse(
             localStorage.getItem(GROUP_KEY) || "[]"
           );
-
-          return Array.isArray(saved) ? saved : [];
+          const cCount = Array.isArray(custom) ? custom.length : 0;
+          const gCount = Array.isArray(groups) ? groups.length : 0;
+          return cCount + gCount;
         } catch {
-          return [];
+          return 0;
         }
       }
 
@@ -269,7 +308,7 @@
       async function loadStats() {
         try {
           const records = await getSavedSongs();
-          const groups = getGroups();
+          const playlistCount = getPlaylistsCount();
 
           const songs = records
             .filter(record => record && record.name)
@@ -285,7 +324,13 @@
 
           const totalPlaylistsEl = document.getElementById("total-playlists");
           if (totalPlaylistsEl) {
-            totalPlaylistsEl.textContent = groups.length;
+            totalPlaylistsEl.textContent = playlistCount;
+          }
+
+          const favs = JSON.parse(localStorage.getItem("ramphony_favorites") || "[]");
+          const totalFavsEl = document.getElementById("total-favorites");
+          if (totalFavsEl) {
+            totalFavsEl.textContent = Array.isArray(favs) ? favs.length : 0;
           }
         } catch (error) {
           console.error("Gagal membaca statistik:", error);
@@ -295,33 +340,64 @@
       loadProfile();
       loadStats();
 
+      // Auto refresh on focus, storage change, or parent message
+      window.addEventListener("storage", () => {
+        loadProfile();
+        loadStats();
+      });
+      window.addEventListener("focus", () => {
+        loadProfile();
+        loadStats();
+      });
+      window.addEventListener("message", event => {
+        if (event.data?.type === "RAMPHONY_REFRESH_PROFILE") {
+          loadProfile();
+          loadStats();
+        }
+      });
+
     })();
   </script>
 
-  <!-- OVERLAY NAVIGATION: close overlay when inside index.html iframe -->
+    <!-- OVERLAY NAVIGATION: close overlay when inside index.html iframe -->
   <script>
     (function () {
       "use strict";
 
+      function sendToParent(type) {
+        if (window.parent && window.parent !== window) {
+          try {
+            window.parent.postMessage({ type: type }, "*");
+          } catch (e) {
+            console.error("Failed to postMessage:", e);
+          }
+        }
+      }
+
+      const backBtn = document.getElementById("back-to-player-btn") || document.querySelector(".back-btn");
+      if (backBtn) {
+        backBtn.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (window.parent && window.parent !== window) {
+            sendToParent("RAMPHONY_CLOSE_PROFILE");
+          } else {
+            window.location.href = "../index.html";
+          }
+        });
+      }
+
       const isEmbedded = window.parent !== window;
       if (!isEmbedded) return;
-
-      function sendToParent(type) {
-        window.parent.postMessage({ type: type }, window.location.origin);
-      }
 
       document.addEventListener('click', function (event) {
         const link = event.target.closest('a[href]');
         if (!link) return;
         const href = link.getAttribute('href');
         if (!href) return;
-        let url;
-        try { url = new URL(href, document.baseURI); } catch { return; }
-        if (url.origin !== location.origin) return;
-        const path = url.pathname;
 
         /* Back to Player -> close profile overlay */
-        if (path.endsWith('/index.html')) {
+        if (link.classList.contains('back-btn') || href.includes('index.html')) {
           event.preventDefault();
           event.stopImmediatePropagation();
           sendToParent('RAMPHONY_CLOSE_PROFILE');
@@ -329,12 +405,12 @@
         }
 
         /* Edit Profile -> load form-data inside this same iframe */
-        if (path.endsWith('/pages/form-data.html')) {
+        if (href.includes('form-data.html')) {
           return;
         }
 
         /* Playlist link */
-        if (path.endsWith('/pages/playlist.html')) {
+        if (href.includes('playlist.html')) {
           event.preventDefault();
           event.stopImmediatePropagation();
           sendToParent('RAMPHONY_OPEN_PLAYLIST');

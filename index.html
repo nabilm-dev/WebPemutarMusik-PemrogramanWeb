@@ -352,6 +352,8 @@
         z-index: 10004 !important;
       }
     </style>
+    <link rel="stylesheet" href="assets/css/auth.css" />
+    <link rel="stylesheet" href="assets/css/chat.css" />
   </head>
 
   <body>
@@ -374,40 +376,44 @@
 
       <!-- SIDEBAR -->
       <aside id="sidebar" class="sidebar">
-        <a href="index.html" class="logo">Ramphony</a>
+        <div class="sidebar-header">
+          <a href="#" class="logo" id="logo-home-btn" data-page="home" title="Kembali ke Home">Ramphony</a>
+        </div>
 
         <nav class="side-nav">
           <p class="nav-heading">MENU UTAMA</p>
 
-          <a href="#" class="nav-link active" data-page="home">
-            <span>⌂</span> Home
-          </a>
+          <a href="#" class="nav-link active" data-page="home">Home</a>
+
+          <a href="#" class="nav-link" data-page="tracks">Koleksi Lagu Lokal</a>
 
           <p class="nav-heading">YOUR LIBRARY</p>
 
-          <a href="pages/playlist.html" class="nav-link" data-page="playlist">
-            <span>♫</span> Playlist
-          </a>
+          <a href="pages/playlist.html" class="nav-link" data-page="playlist">Playlist</a>
 
-          <a href="#" class="nav-link" data-page="favorites">
-            <span>♡</span> Favorites
-          </a>
+          <a href="#" class="nav-link" data-page="favorites">Favorites</a>
 
-          <a href="#" class="nav-link" data-page="history">
-            <span>◷</span> Recently Played
-          </a>
+          <a href="#" class="nav-link" data-page="history">Recently Played</a>
+
+          <p class="nav-heading">KOMUNIKASI</p>
+
+          <a href="#" class="nav-link" id="side-nav-chat">Chat Room</a>
 
           <p class="nav-heading">LAINNYA</p>
 
-          <a href="#" class="nav-link" data-page="settings">
-            <span>⚙</span> Settings
-          </a>
+          <a href="#" class="nav-link" data-page="settings">Settings</a>
         </nav>
 
-        <div class="sidebar-account">
-          <span>◉</span>
-          <span>Guest</span>
-          <a href="pages/profile.html">Create Profile</a>
+        <div class="sidebar-account" id="sidebar-account-box">
+          <div class="sa-avatar-wrap">
+            <img id="sa-avatar-img" class="sa-avatar-img" src="" alt="Avatar" hidden />
+            <span id="sa-avatar-letter">G</span>
+          </div>
+          <div class="sa-user-info">
+            <span id="sa-name" class="sa-name">Guest</span>
+            <small id="sa-sub" class="sa-sub">Mode Tamu</small>
+          </div>
+          <button type="button" id="sa-action-btn" class="sa-action-btn">Masuk / Daftar</button>
         </div>
 
         <p class="copyright">© Ramphony Offline Player</p>
@@ -417,24 +423,40 @@
       <main class="main-content">
         <!-- HEADER -->
         <header class="topbar">
-          <a
-            href="pages/profile.html"
-            class="profile-button"
-            title="My Profile"
-            aria-label="My Profile"
-          >
-            <svg
-              width="25"
-              height="25"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
+          <div class="topbar-actions">
+            <!-- CHAT BUTTON -->
+            <button id="open-chat-btn" class="topbar-icon-btn" type="button" title="Buka Ramphony Chat Room" aria-label="Buka Chat">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span id="chat-unread-dot" class="chat-unread-dot" hidden></span>
+            </button>
+
+            <!-- AUTH BUTTON -->
+            <button id="topbar-auth-btn" class="topbar-auth-pill" type="button" title="Masuk atau Daftar Akun">
+              Masuk / Daftar
+            </button>
+
+            <!-- PROFILE BUTTON -->
+            <a
+              href="pages/profile.html"
+              class="profile-button"
+              title="My Profile"
+              aria-label="My Profile"
             >
-              <circle cx="12" cy="8" r="4"></circle>
-              <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
-            </svg>
-          </a>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
+              </svg>
+            </a>
+          </div>
         </header>
 
         <!-- WORKSPACE -->
@@ -587,65 +609,45 @@
             </div>
           </section>
 
-          <!-- PLAYLIST PANEL -->
-          <section class="playlist-panel" id="playlist">
-            <div class="playlist-header">
-              <div>
-                <h2 id="library-title">Daftar Putar</h2>
-                <p id="count">Daftar putar</p>
-              </div>
+          </div>
 
-              <div class="playlist-actions">
-                <button id="demo" class="btn-demo" type="button">♫ Demo</button>
-
-                <button id="pick" class="btn-add" type="button">
-                  + Tambah Lagu
-                </button>
-              </div>
+                <!-- LOCAL TRACKS VIEW -->
+        <section id="tracks-view" class="library-view" hidden>
+          <div class="view-header">
+            <div>
+              <span class="eyebrow">LOCAL STORAGE</span>
+              <h2>Koleksi Lagu Lokal <span id="count" class="count-badge">0 lagu</span></h2>
+              <p>Kelola file audio dari perangkatmu atau putar lagu demo.</p>
             </div>
 
-            <!-- SEARCH -->
-            <div class="playlist-search">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="m16 16 5 5"></path>
-              </svg>
-
-              <input
-                id="search-track"
-                type="search"
-                placeholder="Cari lagu..."
-                aria-label="Cari lagu"
-              />
+            <div class="playlist-actions">
+              <button id="demo" class="btn-demo" type="button">♫ Demo</button>
+              <button id="pick" class="btn-add" type="button">+ Tambah Lagu</button>
             </div>
+          </div>
 
-            <!-- SONG LIST -->
-            <ul id="ul" class="track-list"></ul>
+          <!-- LOCAL SEARCH -->
+          <div class="playlist-search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m16 16 5 5"></path>
+            </svg>
+            <input id="search-track" type="search" placeholder="Cari dalam koleksi lokal..." aria-label="Cari lagu" />
+          </div>
 
-            <div id="library-empty" class="library-empty" hidden>
-              Belum ada lagu.
-            </div>
+          <!-- SONG LIST -->
+          <ul id="ul" class="track-list"></ul>
 
-            <div class="drop-zone">
-              Tarik file MP3 ke sini atau klik Tambah Lagu.
-            </div>
+          <div id="library-empty" class="library-empty" hidden>
+            Belum ada lagu lokal yang ditambahkan.
+          </div>
 
-            <input
-              id="file"
-              type="file"
-              accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac"
-              multiple
-              hidden
-            />
-          </section>
-        </div>
+          <div class="drop-zone">
+            Tarik file MP3 ke sini atau klik Tambah Lagu.
+          </div>
+
+          <input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac" multiple hidden />
+        </section>
 
         <!-- ADDITIONAL VIEWS -->
         <!-- FAVORITES VIEW -->
@@ -805,27 +807,56 @@
       </main>
     </div>
 
-    <!-- HIDDEN PLAYER COMPATIBILITY -->
-    <div class="bottom-player">
-      <span id="ini">♪</span>
-      <span id="bottom-title">No track selected</span>
-      <span id="sub">Offline player</span>
+    <!-- BOTTOM SEEK PLAYER (Visible on all pages except Home) -->
+    <div id="bottom-player" class="bottom-player" hidden>
+      <div class="bp-track">
+        <div class="bp-art-wrap">
+          <img id="bottom-art" class="bp-art" src="" alt="Cover" hidden />
+          <span id="ini" class="bp-art-fallback">♪</span>
+        </div>
+        <div class="bp-info">
+          <strong id="bottom-title">No track selected</strong>
+          <small id="sub" class="bp-meta">Offline player</small>
+        </div>
+        <button id="bottom-fav" class="bp-fav-btn" type="button" title="Favorit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path class="bp-fav-heart" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </button>
+      </div>
 
-      <button id="shuf" type="button"></button>
-      <button id="prev" type="button"></button>
-      <button id="play" type="button"></button>
-      <button id="next" type="button"></button>
-      <button id="rep" type="button"></button>
+      <div class="bp-center">
+        <div class="bp-controls">
+          <button id="shuf" class="bp-ctrl-btn" type="button" title="Shuffle"></button>
+          <button id="prev" class="bp-ctrl-btn" type="button" title="Previous"></button>
+          <button id="play" class="bp-ctrl-btn primary" type="button" title="Play / Pause"></button>
+          <button id="next" class="bp-ctrl-btn" type="button" title="Next"></button>
+          <button id="rep" class="bp-ctrl-btn" type="button" title="Repeat"></button>
+        </div>
 
-      <span id="bottom-cur">0:00</span>
+        <div class="bp-progress-row">
+          <span id="bottom-cur" class="bp-time">0:00</span>
+          <div class="bp-seek-wrap">
+            <input id="bottom-progress" type="range" min="0" max="100" step="0.1" value="0" aria-label="Progress lagu" />
+          </div>
+          <span id="bottom-dur" class="bp-time">0:00</span>
+        </div>
+      </div>
 
-      <input id="bottom-progress" type="range" min="0" max="100" value="0" />
-
-      <span id="bottom-dur">0:00</span>
-
-      <input id="vol" type="range" min="0" max="100" value="80" />
-
-      <span id="volume-number">80</span>
+      <div class="bp-right">
+        <div class="bp-volume-wrap">
+          <span class="bp-vol-icon">🔊</span>
+          <input id="vol" type="range" min="0" max="100" value="80" aria-label="Volume" />
+          <span id="volume-number" class="bp-vol-num">80</span>
+        </div>
+        <button id="bottom-go-home" class="bp-home-btn" type="button" title="Kembali ke LCD Deck di Home">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>LCD Home</span>
+        </button>
+      </div>
     </div>
 
     <!-- AUDIO -->
@@ -1071,7 +1102,6 @@
 
         /* ---- Listen messages from iframes ---- */
         window.addEventListener("message", function (event) {
-          if (event.origin !== location.origin) return;
 
           const data = event.data;
           if (!data || typeof data !== "object") return;
@@ -1123,5 +1153,203 @@
         });
       })();
     </script>
+
+    <!-- AUTH MODAL (LOGIN & REGISTER - FIREBASE READY) -->
+    <div id="auth-modal" class="auth-modal-overlay" hidden>
+      <div class="auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+        <button type="button" id="auth-close-btn" class="auth-close-btn" title="Tutup">✕</button>
+
+        <div class="auth-header">
+          <div class="auth-brand">
+            <span>♫</span>
+            <span>RAMPHONY</span>
+          </div>
+          <p id="auth-modal-title">Masuk atau Buat Akun untuk menikmati sinkronisasi profil & obrolan di Chat Room.</p>
+        </div>
+
+        <div class="auth-tabs">
+          <button type="button" id="auth-tab-login" class="auth-tab-btn active">Masuk (Login)</button>
+          <button type="button" id="auth-tab-register" class="auth-tab-btn">Daftar Akun (Register)</button>
+        </div>
+
+        <div id="auth-alert" class="auth-alert"></div>
+
+        <!-- FORM LOGIN -->
+        <form id="auth-login-form" class="auth-form" autocomplete="on">
+          <div class="auth-field">
+            <label for="auth-login-email">Email atau Username</label>
+            <div class="auth-input-wrap">
+              <input type="text" id="auth-login-email" placeholder="nama@email.com atau username" required autocomplete="username" />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="auth-login-password">Password</label>
+            <div class="auth-input-wrap">
+              <input type="password" id="auth-login-password" placeholder="••••••••" required autocomplete="current-password" />
+              <button type="button" class="auth-toggle-pwd" data-for="auth-login-password" title="Lihat password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="auth-login-submit" class="auth-submit-btn">Masuk ke Ramphony</button>
+
+          <p class="auth-footer-note">
+            Belum punya akun? <button type="button" id="auth-switch-to-reg" class="auth-footer-link">Daftar sekarang</button>
+          </p>
+        </form>
+
+        <!-- FORM REGISTER -->
+        <form id="auth-reg-form" class="auth-form" hidden autocomplete="on">
+          <div class="auth-field">
+            <label for="auth-reg-name">Nama Lengkap (Display Name)</label>
+            <div class="auth-input-wrap">
+              <input type="text" id="auth-reg-name" placeholder="Contoh: Nabil Maliqi" required autocomplete="name" />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="auth-reg-username">Username</label>
+            <div class="auth-input-wrap">
+              <input type="text" id="auth-reg-username" placeholder="Contoh: nabil" required autocomplete="username" />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="auth-reg-email">Email</label>
+            <div class="auth-input-wrap">
+              <input type="email" id="auth-reg-email" placeholder="nama@email.com" required autocomplete="email" />
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="auth-reg-password">Password</label>
+            <div class="auth-input-wrap">
+              <input type="password" id="auth-reg-password" placeholder="Minimal 6 karakter" required autocomplete="new-password" />
+              <button type="button" class="auth-toggle-pwd" data-for="auth-reg-password" title="Lihat password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="auth-reg-confirm">Konfirmasi Password</label>
+            <div class="auth-input-wrap">
+              <input type="password" id="auth-reg-confirm" placeholder="Ulangi password" required autocomplete="new-password" />
+              <button type="button" class="auth-toggle-pwd" data-for="auth-reg-confirm" title="Lihat password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="auth-reg-submit" class="auth-submit-btn">Buat Akun Ramphony</button>
+
+          <p class="auth-footer-note">
+            Sudah punya akun? <button type="button" id="auth-switch-to-login" class="auth-footer-link">Masuk di sini</button>
+          </p>
+        </form>
+
+        <div class="auth-firebase-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 18h16L12 2zm0 4.5l5.2 10.5H6.8L12 6.5z"/></svg>
+          <span>Firebase Auth Ready · Siap dihubungkan ke Firebase Project</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT ROOM MODAL (DARK-MINT GLASS & CONTACT SELECTOR) -->
+    <div id="chat-modal" class="chat-modal-overlay" hidden>
+      <div class="chat-phone-frame" role="dialog" aria-modal="true" aria-label="Ramphony Chat Room">
+
+        <!-- SCREEN 1: CONTACT / INBOX LIST -->
+        <div id="chat-view-inbox" class="chat-screen-view">
+          <header class="chat-inbox-header">
+            <div class="chat-inbox-user">
+              <span class="chat-greeting-label">Halo,</span>
+              <h2 id="chat-inbox-my-name" class="chat-user-headline">Nabil</h2>
+            </div>
+            <div class="chat-inbox-actions">
+              <button id="chat-inbox-close" class="chat-round-btn" type="button" title="Tutup Chat">✕</button>
+            </div>
+          </header>
+
+          <!-- CATEGORY / FILTER PILL TABS -->
+          <div class="chat-filter-strip">
+            <button type="button" class="chat-filter-pill active" data-filter="all">Semua Obrolan</button>
+            <button type="button" class="chat-filter-pill" data-filter="online">Online</button>
+          </div>
+
+          <!-- SEARCH INPUT -->
+          <div class="chat-search-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="chat-contact-search" placeholder="Cari kontak teman..." autocomplete="off" />
+          </div>
+
+          <!-- CONTACTS LIST -->
+          <div id="chat-contacts-list" class="chat-contacts-scroll">
+            <!-- Dynamic contact items rendered via JS -->
+          </div>
+        </div>
+
+        <!-- SCREEN 2: ACTIVE CONVERSATION -->
+        <div id="chat-view-convo" class="chat-screen-view" hidden>
+          <header class="chat-convo-header">
+            <div class="chat-convo-header-left">
+              <button id="chat-back-to-inbox" class="chat-back-btn" type="button" title="Kembali ke Kontak">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+              </button>
+              <div class="chat-convo-avatar-wrap">
+                <div id="chat-convo-avatar" class="chat-convo-avatar">L</div>
+                <span id="chat-convo-online-dot" class="chat-convo-online-dot"></span>
+              </div>
+              <div class="chat-convo-meta">
+                <h3 id="chat-convo-name">Larry Machigo</h3>
+                <span id="chat-convo-status" class="chat-convo-status">Online</span>
+              </div>
+            </div>
+            <button id="chat-convo-close" class="chat-round-btn" type="button" title="Tutup Chat">✕</button>
+          </header>
+
+          <!-- MESSAGES LIST -->
+          <div id="chat-messages-list" class="chat-messages-scroll"></div>
+
+          <!-- INPUT FORM -->
+          <div class="chat-convo-bottom">
+            <form id="chat-send-form" class="chat-input-pill">
+              <input
+                type="text"
+                id="chat-input-text"
+                class="chat-input-field"
+                placeholder="Tulis pesan..."
+                autocomplete="off"
+                required
+              />
+              <button type="submit" id="chat-send-submit" class="chat-send-btn" title="Kirim Pesan">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FIREBASE COMPAT SDK (Optional: Active when FIREBASE_CONFIG is filled) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- AUTH & CHAT LOGIC -->
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/chat.js"></script>
+
   </body>
 </html>

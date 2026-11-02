@@ -6,6 +6,7 @@ const audio = $("#a");
 
 let tracks = [];
 let cur = -1;
+
 let shuffle = false;
 let repeat = 0;
 
@@ -107,6 +108,12 @@ function load(index, autoplay = false) {
   cur = index;
   const track = tracks[index];
 
+  if (track.src && track.src.startsWith("http")) {
+    audio.crossOrigin = "anonymous";
+  } else {
+    audio.removeAttribute("crossorigin");
+  }
+
   audio.src = track.src;
   audio.load();
 
@@ -114,7 +121,9 @@ function load(index, autoplay = false) {
   $("#bottom-title").textContent = track.name;
 
   $("#sub").textContent =
-    track.tag === "Demo" ? "Lagu demo" : "Dari perangkatmu";
+    track.tag === "Demo"
+      ? "Lagu demo"
+      : "Dari perangkatmu";
 
   $("#ini").textContent =
     track.name.trim().charAt(0).toUpperCase() || "♪";
@@ -132,10 +141,13 @@ function load(index, autoplay = false) {
   updateSeekFill();
   render();
   updateHeartStatus();
+  updateBottomPlayer();
 
   if (autoplay) {
     playAudio();
     addToHistory(track);
+  } else {
+    updateState(false);
   }
 }
 
@@ -147,18 +159,27 @@ function playAudio() {
     addToHistory(tracks[cur]);
   }
 
-  audio.play().catch(error => {
-    console.warn("Audio tidak dapat diputar:", error);
-  });
+  if (audioContext && audioContext.state === "suspended") {
+    audioContext.resume().catch(e => console.warn("AudioContext resume:", e));
+  }
+
+  if (audio.muted) audio.muted = false;
+
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(error => {
+      console.warn("Audio play rejected:", error);
+      // Fallback: If blocked due to crossOrigin header, retry without crossOrigin
+      if (audio.crossOrigin) {
+        audio.removeAttribute("crossorigin");
+        audio.load();
+        audio.play().catch(e => console.warn("Audio fallback retry failed:", e));
+      }
+    });
+  }
 }
 
 function toggle() {
-  if (cur < 0) {
-    if (tracks.length) load(0, true);
-    else $("#pick").click();
-    return;
-  }
-
   if (audio.paused) playAudio();
   else audio.pause();
 }
@@ -359,9 +380,9 @@ function showStorageNotice(message) {
     `;
 
     const actions = $(".playlist-actions");
+    const container = $("#tracks-view") || $("#playlist") || document.body;
 
-    (actions?.parentElement || $("#playlist"))
-      .appendChild(notice);
+    (actions?.parentElement || container).appendChild(notice);
   }
 
   notice.textContent = message;
@@ -377,7 +398,10 @@ folderInput.multiple = true;
 folderInput.setAttribute("webkitdirectory", "");
 folderInput.hidden = true;
 
-$("#playlist").appendChild(folderInput);
+const tracksContainer = $("#tracks-view") || $("#playlist") || document.body;
+if (tracksContainer) {
+  tracksContainer.appendChild(folderInput);
+}
 
 const folderButton = document.createElement("button");
 
@@ -391,7 +415,7 @@ const actions = $(".playlist-actions");
 
 if (actions) {
   actions.appendChild(folderButton);
-} else {
+} else if ($("#pick")) {
   $("#pick").insertAdjacentElement("afterend", folderButton);
 }
 
@@ -562,6 +586,8 @@ function seekTo(percent) {
 
   audio.currentTime =
     (Number(percent) / 100) * audio.duration;
+
+  updateProgress();
 }
 
 seek.oninput = () => {
@@ -596,6 +622,22 @@ function updateProgress() {
 
     updateSeekFill();
   }
+
+  const spdCur = document.getElementById("spd-cur-time");
+  const spdDur = document.getElementById("spd-dur-time");
+  const spdSeek = document.getElementById("spd-seek");
+
+  if (spdCur) spdCur.textContent = formatTime(current);
+  if (spdDur) spdDur.textContent = formatTime(duration || 0);
+
+  if (spdSeek && document.activeElement !== spdSeek) {
+    if (Number.isFinite(duration) && duration > 0) {
+      spdSeek.value = Math.min(100, Math.max(0, (current / duration) * 100));
+    } else {
+      spdSeek.value = 0;
+    }
+  }
+
   broadcastPlayerState();
 }
 
@@ -811,6 +853,7 @@ function updateState(playing) {
 
   refreshControlIcons();
   render();
+  updateBottomPlayer();
 
   if (playing) startVisualizer();
   else stopVisualizer();
@@ -847,7 +890,15 @@ audio.addEventListener("ended", () => {
 });
 
 audio.addEventListener("error", () => {
-  console.error("File audio gagal dimuat:", audio.src);
+  console.warn("File audio gagal dimuat:", audio.src);
+  if (audio.crossOrigin) {
+    console.warn("Retrying audio playback without crossOrigin attribute...");
+    audio.removeAttribute("crossorigin");
+    audio.src = tracks[cur]?.src || "";
+    audio.load();
+    audio.play().catch(err => console.warn("Retry failed:", err));
+    return;
+  }
   updateState(false);
 });
 
@@ -1219,26 +1270,54 @@ function renderHistory() {
 
 /* ===== PLAY FROM EXTERNAL VIEW ===== */
 
-function playFromExternal(item, switchHome = true) {
+function playFromExternal(item, switchHome = false) {
   if (!item || !item.name) return;
   const existingIdx = tracks.findIndex(t => t.name === item.name);
+  let targetIdx;
+
   if (existingIdx >= 0) {
     if (item.src) tracks[existingIdx].src = item.src;
     if (item.tag) tracks[existingIdx].tag = item.tag;
-    load(existingIdx, true);
-  } else if (item.src) {
+    if (item.artwork) tracks[existingIdx].artwork = item.artwork;
+    if (item.videoId) tracks[existingIdx].videoId = item.videoId;
+    if (item.isYouTube !== undefined) tracks[existingIdx].isYouTube = item.isYouTube;
+    if (item.previewSrc) tracks[existingIdx].previewSrc = item.previewSrc;
+    targetIdx = existingIdx;
+  } else {
     tracks.push({
       name: item.name,
-      src: item.src,
-      tag: item.tag || "Playlist"
+      title: item.title || item.name,
+      artist: item.artist || "",
+      src: item.src || "",
+      tag: item.tag || "Online HQ",
+      artwork: item.artwork || null,
+      videoId: item.videoId || null,
+      isYouTube: item.isYouTube !== undefined ? item.isYouTube : Boolean(item.videoId || !item.src),
+      previewSrc: item.previewSrc || null
     });
     render();
-    load(tracks.length - 1, true);
+    targetIdx = tracks.length - 1;
   }
+
+  load(targetIdx, true);
   if (switchHome) {
     switchView("home");
   }
 }
+
+window.playFromExternal = playFromExternal;
+window.saveExternalToPlaylist = function(item) {
+  if (!item || !item.name) return;
+  const existing = tracks.some(t => t.name === item.name);
+  if (!existing) {
+    tracks.push({
+      name: item.name,
+      src: item.src,
+      tag: item.tag || "Online"
+    });
+    render();
+  }
+};
 
 /* ===== SETTINGS ===== */
 
@@ -1333,12 +1412,14 @@ function initSettings() {
 
 function switchView(page) {
   const workspace = $(".workspace");
+  const tracksView = $("#tracks-view");
   const favsView = $("#favorites-view");
   const histView = $("#history-view");
   const settingsView = $("#settings-view");
   const links = document.querySelectorAll(".side-nav .nav-link");
   const playlistOverlay = document.getElementById("playlist-overlay");
   const profileOverlay = document.getElementById("profile-overlay");
+  const bottomPlayer = document.getElementById("bottom-player");
 
   if (page === "playlist") {
     if (playlistOverlay) {
@@ -1365,10 +1446,17 @@ function switchView(page) {
 
   if (page !== "playlist") {
     if (workspace) workspace.hidden = page !== "home";
+    if (tracksView) tracksView.hidden = page !== "tracks";
     if (favsView) favsView.hidden = page !== "favorites";
     if (histView) histView.hidden = page !== "history";
     if (settingsView) settingsView.hidden = page !== "settings";
 
+    // Bottom seek player is hidden on home, visible on all other pages
+    if (bottomPlayer) {
+      bottomPlayer.hidden = (page === "home");
+    }
+
+    if (page === "tracks") render();
     if (page === "favorites") renderFavorites();
     if (page === "history") renderHistory();
   }
@@ -1384,6 +1472,22 @@ function initNavigation() {
       closeMenu();
     });
   });
+
+  // Side nav chat room click
+  $("#side-nav-chat")?.addEventListener("click", e => {
+    e.preventDefault();
+    document.getElementById("open-chat-btn")?.click();
+    closeMenu();
+  });
+
+  // Logo click to go to Home
+  $("#logo-home-btn")?.addEventListener("click", e => {
+    e.preventDefault();
+    switchView("home");
+    closeMenu();
+  });
+
+
 
   $("#clear-history")?.addEventListener("click", () => {
     if (confirm("Hapus seluruh riwayat pemutaran?")) {
@@ -1403,7 +1507,6 @@ function initNavigation() {
     render();
     const firstFavIdx = tracks.findIndex(t => t.name === favs[0].name);
     if (firstFavIdx >= 0) load(firstFavIdx, true);
-    switchView("home");
   });
 }
 
@@ -1430,7 +1533,6 @@ function broadcastPlayerState() {
     } catch (e) {}
   }
 }
-
 window.addEventListener("message", event => {
   const data = event.data;
   if (!data || typeof data !== "object") return;
@@ -1464,6 +1566,66 @@ window.addEventListener("message", event => {
   }
 });
 
+
+
+/* ===== BOTTOM PLAYER CONTROLLER ===== */
+
+function updateBottomPlayer() {
+  const titleEl = document.getElementById("bottom-title");
+  const subEl = document.getElementById("sub");
+  const artImg = document.getElementById("bottom-art");
+  const iniEl = document.getElementById("ini");
+  const favBtn = document.getElementById("bottom-fav");
+
+  const currentTrack = cur >= 0 && tracks[cur] ? tracks[cur] : null;
+
+  if (currentTrack) {
+    if (titleEl) titleEl.textContent = currentTrack.name;
+    if (subEl) subEl.textContent = currentTrack.tag === "Demo" ? "Lagu demo" : "Dari perangkatmu";
+
+    if (artImg && iniEl) {
+      if (currentTrack.artwork) {
+        artImg.src = currentTrack.artwork;
+        artImg.hidden = false;
+        iniEl.hidden = true;
+      } else {
+        artImg.hidden = true;
+        iniEl.hidden = false;
+        iniEl.textContent = currentTrack.name.trim().charAt(0).toUpperCase() || "♪";
+      }
+    }
+
+    if (favBtn) {
+      favBtn.classList.toggle("active", isFavorite(currentTrack.name));
+    }
+  } else {
+    if (titleEl) titleEl.textContent = "No track selected";
+    if (subEl) subEl.textContent = "Offline player";
+    if (artImg) artImg.hidden = true;
+    if (iniEl) {
+      iniEl.hidden = false;
+      iniEl.textContent = "♪";
+    }
+    if (favBtn) favBtn.classList.remove("active");
+  }
+}
+
+function initBottomPlayer() {
+  const favBtn = document.getElementById("bottom-fav");
+  const homeBtn = document.getElementById("bottom-go-home");
+
+  favBtn?.addEventListener("click", () => {
+    toggleFav();
+    updateBottomPlayer();
+  });
+
+  homeBtn?.addEventListener("click", () => {
+    switchView("home");
+  });
+
+  updateBottomPlayer();
+}
+
 /* ===== INITIALIZATION ===== */
 
 render();
@@ -1473,5 +1635,6 @@ updateProfile();
 updateHeartStatus();
 initSettings();
 initNavigation();
+initBottomPlayer();
 renderFavorites();
 renderHistory();
