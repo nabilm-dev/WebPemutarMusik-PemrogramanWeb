@@ -16,6 +16,8 @@ const closeButton = document.querySelector("#close-lyrics");
 const playButton = document.querySelector("#lyrics-play");
 const prevButton = document.querySelector("#lyrics-prev");
 const nextButton = document.querySelector("#lyrics-next");
+const shuffleButton = document.querySelector("#lyrics-shuffle");
+const repeatButton = document.querySelector("#lyrics-repeat");
 
 const progress = document.querySelector("#lyrics-progress");
 const currentLabel = document.querySelector("#lyrics-current");
@@ -697,6 +699,15 @@ function clickParentControl(...selectors) {
   }
 }
 
+shuffleButton?.addEventListener("click", () => {
+  clickParentControl(
+    "#player-shuffle",
+    "#mobile-shuf",
+    "#shuf"
+  );
+  updateShuffleRepeatStatus();
+});
+
 prevButton?.addEventListener("click", () => {
   clickParentControl(
     "#player-prev",
@@ -712,6 +723,39 @@ nextButton?.addEventListener("click", () => {
     "#next"
   );
 });
+
+repeatButton?.addEventListener("click", () => {
+  clickParentControl(
+    "#player-repeat",
+    "#mobile-rep",
+    "#rep"
+  );
+  updateShuffleRepeatStatus();
+});
+
+
+function updateShuffleRepeatStatus() {
+  const parentDoc = getParentDocument();
+  if (!parentDoc) return;
+
+  const parentShuf = parentDoc.querySelector("#player-shuffle, #mobile-shuf, #shuf");
+  if (parentShuf && shuffleButton) {
+    const isShuf = parentShuf.classList.contains("act") || parentShuf.classList.contains("active") || parentShuf.getAttribute("aria-pressed") === "true";
+    shuffleButton.classList.toggle("active", isShuf);
+  }
+
+  const parentRep = parentDoc.querySelector("#player-repeat, #mobile-rep, #rep");
+  if (parentRep && repeatButton) {
+    const isRep = parentRep.classList.contains("act") || parentRep.classList.contains("active") || parentRep.getAttribute("aria-pressed") === "true";
+    repeatButton.classList.toggle("active", isRep);
+    if (parentRep.textContent.includes("¹")) {
+      repeatButton.textContent = "↻¹";
+    } else {
+      repeatButton.textContent = "↻";
+    }
+  }
+
+}
 
 /* ===== SEEK HOME + PLAYLIST ===== */
 
@@ -773,13 +817,14 @@ function updatePlayerControls() {
 
   if (playButton) {
     playButton.textContent =
-      audio && !audio.paused ? "⏸" : "▶";
+      audio && !audio.paused ? "❚❚" : "▶";
 
     playButton.setAttribute(
       "aria-label",
       audio && !audio.paused ? "Pause" : "Play"
     );
   }
+  updateShuffleRepeatStatus();
 
   if (audio) {
     const duration = Number.isFinite(audio.duration)

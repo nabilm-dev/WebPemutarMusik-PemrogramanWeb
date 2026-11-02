@@ -9,8 +9,17 @@
   <body>
     <div class="app">
       <header class="topbar">
-        <a href="../index.html" class="back-btn">Back to Home</a>
-        <a href="../index.html" class="logo">Ramphony</a>
+        <button
+          id="menu-toggle"
+          class="menu-toggle"
+          type="button"
+          aria-label="Buka menu"
+          aria-expanded="false"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </header>
 
       <main class="main container">
@@ -130,6 +139,7 @@
           <strong id="playing-title">No song playing</strong>
           <small id="playing-playlist">Ramphony</small>
         </div>
+        <button id="player-fav" class="player-fav-btn" type="button" title="Tambah ke favorit">♡</button>
       </div>
 
       <div class="player-center">
@@ -179,94 +189,48 @@
     <audio id="playlist-audio" preload="metadata"></audio>
     <script src="../assets/js/playlists.js"></script>
 
+    <!-- OVERLAY NAVIGATION: when embedded in index.html -->
     <script>
-      (() => {
-        document.addEventListener(
-          "click",
-          function (event) {
-            const link = event.target.closest("a[href]");
-            if (!link) return;
+      (function () {
+        "use strict";
 
-            const href = link.getAttribute("href");
-            if (!href) return;
-
-            let destination = null;
-
-            try {
-              const url = new URL(href, document.baseURI);
-
-              if (url.origin !== location.origin) return;
-
-              if (url.pathname.endsWith("/index.html")) {
-                destination = "home";
-              }
-
-              if (url.pathname.endsWith("/pages/playlist.html")) {
-                destination = "playlist";
-              }
-            } catch {
-              return;
+        const toggleBtn = document.getElementById("menu-toggle");
+        if (toggleBtn) {
+          toggleBtn.addEventListener("click", function () {
+            if (window.parent !== window) {
+              window.parent.postMessage({ type: "RAMPHONY_TOGGLE_SIDEBAR" }, "*");
+            } else {
+              window.location.href = "../index.html";
             }
+          });
+        }
+        if (window.parent === window) return;
 
-            if (!destination) return;
+        document.addEventListener("click", function (event) {
+          const link = event.target.closest("a[href]");
+          if (!link) return;
+          const href = link.getAttribute("href");
+          if (!href) return;
+          let url;
+          try { url = new URL(href, document.baseURI); } catch { return; }
+          if (url.origin !== location.origin) return;
+          const path = url.pathname;
 
-            if (window.parent === window) return;
-
+          if (path.endsWith("/index.html")) {
             event.preventDefault();
             event.stopImmediatePropagation();
+            window.parent.postMessage({ type: "RAMPHONY_CLOSE_PLAYLIST" }, "*");
+            return;
+          }
 
-            window.parent.postMessage(
-              {
-                type: "RAMPHONY_NAVIGATE",
-                page: destination,
-              },
-              location.origin,
-            );
-          },
-          true,
-        );
+          if (path.endsWith("/pages/profile.html")) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            window.parent.postMessage({ type: "RAMPHONY_OPEN_PROFILE" }, "*");
+            return;
+          }
+        }, true);
       })();
     </script>
-
-  <!-- OVERLAY NAVIGATION: when inside index.html iframe -->
-  <script>
-    (function () {
-      "use strict";
-
-      const isEmbedded = window.parent !== window;
-      if (!isEmbedded) return;
-
-      function sendToParent(type) {
-        window.parent.postMessage({ type: type }, window.location.origin);
-      }
-
-      document.addEventListener('click', function (event) {
-        const link = event.target.closest('a[href]');
-        if (!link) return;
-        const href = link.getAttribute('href');
-        if (!href) return;
-        let url;
-        try { url = new URL(href, document.baseURI); } catch { return; }
-        if (url.origin !== location.origin) return;
-        const path = url.pathname;
-
-        /* Back to Home -> close playlist overlay */
-        if (path.endsWith('/index.html')) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          sendToParent('RAMPHONY_CLOSE_PLAYLIST');
-          return;
-        }
-
-        /* Profile link -> open profile overlay */
-        if (path.endsWith('/pages/profile.html')) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          sendToParent('RAMPHONY_OPEN_PROFILE');
-          return;
-        }
-      }, true);
-    })();
-  </script>
   </body>
 </html>

@@ -176,12 +176,13 @@
         overflow: hidden;
       }
 
-      /* Hamburger tidak ikut scroll */
+      /* Hamburger tidak ikut scroll - transparan tanpa kotak abu-abu */
       .menu-toggle {
         position: absolute !important;
         top: 26px !important;
         left: 24px !important;
         z-index: 1001 !important;
+        background: transparent !important;
       }
 
       /* Hamburger hilang saat sidebar terbuka */
@@ -343,6 +344,13 @@
       body.page-overlay-open {
         overflow: hidden;
       }
+      /* Sidebar & Overlay over page overlays */
+      .sidebar {
+        z-index: 10005 !important;
+      }
+      .menu-overlay {
+        z-index: 10004 !important;
+      }
     </style>
   </head>
 
@@ -377,7 +385,7 @@
 
           <p class="nav-heading">YOUR LIBRARY</p>
 
-          <a href="pages/playlist.html" class="nav-link">
+          <a href="pages/playlist.html" class="nav-link" data-page="playlist">
             <span>♫</span> Playlist
           </a>
 
@@ -409,8 +417,6 @@
       <main class="main-content">
         <!-- HEADER -->
         <header class="topbar">
-          <a href="index.html" class="mobile-logo logo"> Ramphony </a>
-
           <a
             href="pages/profile.html"
             class="profile-button"
@@ -546,6 +552,24 @@
                 ></button>
 
                 <button
+                  id="mobile-fav"
+                  class="control-btn"
+                  type="button"
+                  title="Favorit"
+                  aria-label="Lagu favorit"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+                    <path
+                      class="fav-heart-path"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                    />
+                  </svg>
+                </button>
+
+                <button
                   id="mobile-lyrics"
                   class="control-btn"
                   type="button"
@@ -567,7 +591,7 @@
           <section class="playlist-panel" id="playlist">
             <div class="playlist-header">
               <div>
-                <h2 id="library-title">Your Playlist</h2>
+                <h2 id="library-title">Daftar Putar</h2>
                 <p id="count">Daftar putar</p>
               </div>
 
@@ -624,19 +648,159 @@
         </div>
 
         <!-- ADDITIONAL VIEWS -->
+        <!-- FAVORITES VIEW -->
         <section id="favorites-view" class="library-view" hidden>
-          <h2>Favorites</h2>
-          <p>Belum ada lagu favorit.</p>
+          <div class="view-header">
+            <div>
+              <span class="eyebrow">YOUR COLLECTION</span>
+              <h2>Favorites <span id="fav-count-badge" class="count-badge">0</span></h2>
+              <p>Lagu-lagu yang kamu tandai sebagai favorit.</p>
+            </div>
+            <button id="play-all-favs" class="btn-view-action" type="button" style="display: none;">
+              ▶ Putar Semua
+            </button>
+          </div>
+
+          <ul id="favorites-list" class="view-track-list"></ul>
+
+          <div id="favorites-empty" class="view-empty">
+            <div class="view-empty-icon">♡</div>
+            <h3>Belum ada lagu favorit</h3>
+            <p>Klik tombol hati pada lagu yang sedang diputar atau pada daftar putar untuk menambahkannya ke sini.</p>
+          </div>
         </section>
 
+        <!-- RECENTLY PLAYED VIEW -->
         <section id="history-view" class="library-view" hidden>
-          <h2>Recently Played</h2>
-          <p>Belum ada riwayat pemutaran.</p>
+          <div class="view-header">
+            <div>
+              <span class="eyebrow">HISTORY</span>
+              <h2>Recently Played <span id="hist-count-badge" class="count-badge">0</span></h2>
+              <p>Riwayat lagu yang baru saja kamu putar.</p>
+            </div>
+            <button id="clear-history" class="btn-view-action danger" type="button" style="display: none;">
+              Hapus Riwayat
+            </button>
+          </div>
+
+          <ul id="history-list" class="view-track-list"></ul>
+
+          <div id="history-empty" class="view-empty">
+            <div class="view-empty-icon">◷</div>
+            <h3>Belum ada riwayat pemutaran</h3>
+            <p>Lagu yang kamu putar akan otomatis tercatat di sini.</p>
+          </div>
         </section>
 
+        <!-- SETTINGS VIEW -->
         <section id="settings-view" class="library-view" hidden>
-          <h2>Settings</h2>
-          <p>Pengaturan Ramphony.</p>
+          <div class="view-header">
+            <div>
+              <span class="eyebrow">PREFERENCES</span>
+              <h2>Settings</h2>
+              <p>Sesuaikan preferensi pemutaran dan tampilan Ramphony.</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-card">
+              <div class="setting-card-title">
+                <span>▶</span>
+                <div>
+                  <strong>Pemutaran Musik</strong>
+                  <small>Pengaturan alur pemutaran lagu.</small>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div>
+                  <span class="setting-label">Auto Play Next Track</span>
+                  <span class="setting-desc">Lanjut ke lagu berikutnya secara otomatis saat lagu selesai.</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-autoplay" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-row">
+                <div>
+                  <span class="setting-label">LCD Audio Visualizer</span>
+                  <span class="setting-desc">Tampilkan animasi grafik frekuensi di layar LCD saat audio menyala.</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="setting-visualizer" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-card-title">
+                <span>♪</span>
+                <div>
+                  <strong>Volume Default</strong>
+                  <small>Tingkat volume awal saat membuka player.</small>
+                </div>
+              </div>
+
+              <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="setting-label">Tingkat Volume</span>
+                  <strong id="setting-vol-display" style="color: var(--green);">80%</strong>
+                </div>
+                <input type="range" id="setting-vol-range" min="0" max="100" value="80" style="accent-color: var(--green); cursor: pointer;" />
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <div class="setting-card-title">
+                <span>🗂</span>
+                <div>
+                  <strong>Penyimpanan & Riwayat</strong>
+                  <small>Kelola data lokal di browser ini.</small>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div>
+                  <span class="setting-label">Hapus Riwayat Pemutaran</span>
+                  <span class="setting-desc">Menghapus semua daftar Recently Played.</span>
+                </div>
+                <button type="button" id="btn-clear-hist-setting" class="btn-setting-btn">Hapus</button>
+              </div>
+
+              <div class="setting-row">
+                <div>
+                  <span class="setting-label">Kosongkan Favorit</span>
+                  <span class="setting-desc">Menghapus semua lagu dari daftar Favorites.</span>
+                </div>
+                <button type="button" id="btn-clear-favs-setting" class="btn-setting-btn">Kosongkan</button>
+              </div>
+
+              <div class="setting-row">
+                <div>
+                  <span class="setting-label">Reset Seluruh Data</span>
+                  <span class="setting-desc">Kembalikan pengaturan, profil, dan data ke kondisi awal.</span>
+                </div>
+                <button type="button" id="btn-reset-all-setting" class="btn-setting-btn danger">Reset Semua</button>
+              </div>
+            </div>
+
+            <div class="setting-card about-card">
+              <div class="setting-card-title">
+                <span>ⓘ</span>
+                <div>
+                  <strong>Tentang Ramphony</strong>
+                  <small>Offline Web Music Player</small>
+                </div>
+              </div>
+              <p style="font-size: 13px; color: #bbb; line-height: 1.6; margin: 12px 0 6px;">
+                Dibuat untuk memutar lagu secara offline langsung di peramban tanpa koneksi internet. Data tersimpan aman di browser Anda menggunakan IndexedDB dan Web Storage.
+              </p>
+              <span style="font-size: 11px; color: #777;">Version 1.2 · © 2026 Ramphony by Nabil Maliqi Ramadhan</span>
+            </div>
+          </div>
         </section>
       </main>
     </div>
@@ -721,15 +885,16 @@
         const audio = document.querySelector("#a");
 
         const song = title?.textContent.trim() || "";
-        const hasAudio = Boolean(audio?.getAttribute("src"));
+        const audioUrl = audio ? (audio.currentSrc || audio.src || "") : "";
+        const hasAudio = Boolean(audioUrl) && song !== "NO TRACK SELECTED";
 
         lyricsFrame.contentWindow?.postMessage(
           {
             type: "RAMPHONY_SONG",
             song: hasAudio ? song : "",
-            audioUrl: hasAudio ? audio.src : "",
+            audioUrl: hasAudio ? audioUrl : "",
           },
-          window.location.origin,
+          "*",
         );
       }
 
@@ -795,6 +960,20 @@
         let profileLoaded  = false;
         let playlistLoaded = false;
 
+        function updateNavActive(page) {
+          const links = document.querySelectorAll(".side-nav .nav-link");
+          links.forEach(l => {
+            l.classList.toggle("active", l.getAttribute("data-page") === page);
+          });
+        }
+
+        function getActiveMainView() {
+          if (!document.getElementById("favorites-view")?.hidden) return "favorites";
+          if (!document.getElementById("history-view")?.hidden) return "history";
+          if (!document.getElementById("settings-view")?.hidden) return "settings";
+          return "home";
+        }
+
         function openOverlay(overlay) {
           overlay.removeAttribute("hidden");
           document.body.classList.add("page-overlay-open");
@@ -803,22 +982,42 @@
         function closeOverlay(overlay) {
           overlay.setAttribute("hidden", "");
           document.body.classList.remove("page-overlay-open");
+          updateNavActive(getActiveMainView());
+        }
+
+        function closeMasterMenu() {
+          const sidebar = document.getElementById("sidebar");
+          const menuOverlay = document.getElementById("menu-overlay");
+          const menuToggle = document.getElementById("menu-toggle");
+          if (sidebar) sidebar.classList.remove("open");
+          if (menuOverlay) menuOverlay.classList.remove("open");
+          if (menuToggle) {
+            menuToggle.setAttribute("aria-expanded", "false");
+            menuToggle.setAttribute("aria-label", "Buka menu");
+          }
         }
 
         function openProfile() {
-          if (!profileLoaded) {
+          closeMasterMenu();
+          if (!profileLoaded || !profileFrame.src || profileFrame.src.endsWith("about:blank")) {
             profileFrame.src = "pages/profile.html";
             profileLoaded = true;
           }
           openOverlay(profileOverlay);
+          updateNavActive("profile");
         }
 
         function openPlaylist() {
-          if (!playlistLoaded) {
+          closeMasterMenu();
+          if (!playlistLoaded || !playlistFrame.src || playlistFrame.src.endsWith("about:blank")) {
             playlistFrame.src = "pages/playlist.html";
             playlistLoaded = true;
           }
           openOverlay(playlistOverlay);
+          updateNavActive("playlist");
+          setTimeout(() => {
+            window.postMessage({ type: "RAMPHONY_TRIGGER_BROADCAST" }, "*");
+          }, 150);
         }
 
         /* ---- Intercept link clicks ---- */
@@ -891,6 +1090,17 @@
 
           if (data.type === "RAMPHONY_OPEN_PLAYLIST") {
             openPlaylist();
+          }
+
+          if (data.type === "RAMPHONY_TOGGLE_SIDEBAR") {
+            const menuToggle = document.getElementById("menu-toggle");
+            if (menuToggle) {
+              menuToggle.click();
+            }
+          }
+
+          if (data.type === "RAMPHONY_OPEN_LYRICS") {
+            openLyricsPopup();
           }
 
           if (data.type === "RAMPHONY_NAVIGATE") {

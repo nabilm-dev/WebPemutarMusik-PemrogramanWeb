@@ -585,6 +585,11 @@
   }
 
   function openLyrics() {
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "RAMPHONY_OPEN_LYRICS" }, "*");
+      return;
+    }
+
     if (!queue[queueIndex]) {
       alert("Putar lagu dulu buat lihat lyrics, bro.");
       return;
@@ -698,11 +703,11 @@
     const playlist = playlists.find(
       item => item.id === playingPlaylistId
     );
+    const playlistName = playlist ? playlist.name : "Playlist";
 
     $("#playing-title").textContent = song.name;
 
-    $("#playing-playlist").textContent =
-      playlist ? playlist.name : "Ramphony";
+    $("#playing-playlist").textContent = playlistName;
 
     $("#playlist-player").hidden = false;
 
@@ -711,17 +716,35 @@
     $("#player-seek").value = 0;
 
     sendSongToLyrics();
+    updatePlayerFav();
 
     if (activeId === playingPlaylistId) {
       renderDetail();
     }
 
-    audio.play().catch(error => {
-      console.warn("Gagal memutar lagu:", error);
-    });
+    if (window.parent !== window) {
+      audio.pause();
+      window.parent.postMessage({
+        type: "RAMPHONY_PLAY_TRACK",
+        track: {
+          name: song.name,
+          src: currentUrl,
+          tag: playlistName
+        }
+      }, "*");
+    } else {
+      audio.play().catch(error => {
+        console.warn("Gagal memutar lagu:", error);
+      });
+    }
   }
 
   function togglePlay() {
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "RAMPHONY_PLAYER_TOGGLE" }, "*");
+      return;
+    }
+
     if (!audio.src) {
       playPlaylist();
       return;
@@ -792,9 +815,70 @@
 
     $("#playlist-player").hidden = true;
     $("#player-play").textContent = "▶";
+    updatePlayerFav();
   }
 
+  
   /* ==========================================
+     FAVORITES INTEGRATION
+     ========================================== */
+  function getFavorites() {
+    try {
+      const data = JSON.parse(localStorage.getItem("ramphony_favorites") || "[]");
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveFavorites(favs) {
+    localStorage.setItem("ramphony_favorites", JSON.stringify(favs));
+  }
+
+  function isFavorite(name) {
+    if (!name) return false;
+    return getFavorites().some(f => f.name === name);
+  }
+
+  function updatePlayerFav() {
+    const btn = $("#player-fav");
+    if (!btn) return;
+    const currentSong = queueIndex >= 0 && queue[queueIndex] ? queue[queueIndex] : null;
+    if (!currentSong) {
+      btn.classList.remove("active");
+      btn.textContent = "♡";
+      btn.title = "Tambah ke favorit";
+      btn.style.opacity = "0.4";
+      btn.style.pointerEvents = "none";
+      return;
+    }
+    const fav = isFavorite(currentSong.name);
+    btn.style.opacity = "1";
+    btn.style.pointerEvents = "auto";
+    btn.classList.toggle("active", fav);
+    btn.textContent = fav ? "♥" : "♡";
+    btn.title = fav ? "Hapus dari favorit" : "Tambah ke favorit";
+  }
+
+  function togglePlayerFav() {
+    if (queueIndex < 0 || !queue[queueIndex]) return;
+    const song = queue[queueIndex];
+    const favs = getFavorites();
+    const idx = favs.findIndex(f => f.name === song.name);
+    if (idx >= 0) {
+      favs.splice(idx, 1);
+    } else {
+      favs.unshift({
+        name: song.name,
+        src: currentUrl || "",
+        tag: "Local"
+      });
+    }
+    saveFavorites(favs);
+    updatePlayerFav();
+  }
+
+/* ==========================================
      PLAYER EVENTS
      ========================================== */
 
@@ -804,6 +888,7 @@
 
   audio.addEventListener("pause", () => {
     $("#player-play").textContent = "▶";
+    updatePlayerFav();
   });
 
   audio.addEventListener("loadedmetadata", () => {
@@ -859,13 +944,20 @@
 
   if (seek) {
     seek.addEventListener("input", event => {
+      const ratio = Number(event.target.value) / 1000;
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: "RAMPHONY_PLAYER_SEEK_RATIO",
+          ratio: ratio
+        }, "*");
+        return;
+      }
+
       if (!Number.isFinite(audio.duration)) {
         return;
       }
 
-      audio.currentTime =
-        (Number(event.target.value) / 1000) *
-        audio.duration;
+      audio.currentTime = ratio * audio.duration;
     });
   }
 
@@ -875,8 +967,14 @@
     volume.value = 80;
 
     volume.addEventListener("input", event => {
-      audio.volume =
-        Number(event.target.value) / 100;
+      const vol = Number(event.target.value) / 100;
+      audio.volume = vol;
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: "RAMPHONY_PLAYER_VOLUME",
+          volume: vol
+        }, "*");
+      }
     });
   }
 
@@ -908,6 +1006,8 @@
     button.textContent =
       repeat === 2 ? "↻¹" : "↻";
   });
+
+  bindClick("#player-fav", togglePlayerFav);
 
   /* ==========================================
      PLAYLIST PAGE EVENTS
@@ -989,11 +1089,51 @@
     }
   });
 
+  
   /* ==========================================
+     SYNC STATE WITH PARENT / LCD
+     ========================================== */
+
+  window.addEventListener("message", event => {
+    const data = event.data;
+    if (!data || typeof data !== "object") return;
+
+    if (data.type === "RAMPHONY_PLAYER_STATE") {
+      const playBtn = $("#player-play");
+      if (playBtn) playBtn.textContent = data.playing ? "❚❚" : "▶";
+
+      if (data.trackName) {
+        $("#playlist-player").hidden = false;
+        $("#playing-title").textContent = data.trackName;
+        if (data.trackTag) $("#playing-playlist").textContent = data.trackTag;
+      }
+
+      if (Number.isFinite(data.duration) && data.duration > 0) {
+        $("#player-current").textContent = formatTime(data.currentTime);
+        $("#player-duration").textContent = formatTime(data.duration);
+        $("#player-seek").value = Math.round((data.currentTime / data.duration) * 1000);
+      }
+
+      updatePlayerFav();
+    }
+
+    if (data.type === "RAMPHONY_AUDIO_ENDED") {
+      if (queue.length > 0 && queueIndex >= 0) {
+        step(1);
+      }
+    }
+  });
+
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: "RAMPHONY_REQUEST_STATE" }, "*");
+  }
+
+/* ==========================================
      INITIALIZE
      ========================================== */
 
   showLibrary();
+  updatePlayerFav();
 
   loadLibrary()
     .then(records => {

@@ -46,8 +46,8 @@ function render() {
   const search = $("#search-track")?.value.toLowerCase().trim() || "";
 
   $("#count").textContent = tracks.length
-    ? `Daftar putar (${tracks.length})`
-    : "Daftar putar";
+    ? `${tracks.length} lagu tersimpan`
+    : "Belum ada lagu";
 
   ul.innerHTML = "";
 
@@ -131,14 +131,21 @@ function load(index, autoplay = false) {
 
   updateSeekFill();
   render();
+  updateHeartStatus();
 
-  if (autoplay) playAudio();
+  if (autoplay) {
+    playAudio();
+    addToHistory(track);
+  }
 }
 
 /* ===== PLAY / PAUSE ===== */
 
 function playAudio() {
   initAudioAnalyser();
+  if (cur >= 0 && tracks[cur]) {
+    addToHistory(tracks[cur]);
+  }
 
   audio.play().catch(error => {
     console.warn("Audio tidak dapat diputar:", error);
@@ -589,6 +596,7 @@ function updateProgress() {
 
     updateSeekFill();
   }
+  broadcastPlayerState();
 }
 
 audio.addEventListener("timeupdate", updateProgress);
@@ -811,17 +819,27 @@ function updateState(playing) {
 audio.addEventListener("play", () => {
   initAudioAnalyser();
   updateState(true);
+  broadcastPlayerState();
 });
 
 audio.addEventListener("pause", () => {
   updateState(false);
+  broadcastPlayerState();
 });
 
 audio.addEventListener("ended", () => {
+  const playlistFrame = document.getElementById("playlist-frame");
+  if (playlistFrame && playlistFrame.contentWindow) {
+    try {
+      playlistFrame.contentWindow.postMessage({ type: "RAMPHONY_AUDIO_ENDED" }, "*");
+    } catch (e) {}
+  }
+
+  const settings = getSettings();
   if (repeat === 2) {
     audio.currentTime = 0;
     playAudio();
-  } else if (repeat === 1 || cur < tracks.length - 1) {
+  } else if (repeat === 1 || (settings.autoplay && cur < tracks.length - 1)) {
     step(1);
   } else {
     updateState(false);
@@ -977,9 +995,483 @@ function updateProfile() {
   }
 }
 
+
+/* ===== FAVORITES ===== */
+
+function getFavorites() {
+  try {
+    const data = JSON.parse(localStorage.getItem("ramphony_favorites") || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFavorites(favs) {
+  localStorage.setItem("ramphony_favorites", JSON.stringify(favs));
+}
+
+function isFavorite(name) {
+  if (!name) return false;
+  return getFavorites().some(f => f.name === name);
+}
+
+function toggleFavorite(track) {
+  if (!track || !track.name) return;
+  const favs = getFavorites();
+  const idx = favs.findIndex(f => f.name === track.name);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+  } else {
+    favs.unshift({
+      name: track.name,
+      src: track.src,
+      tag: track.tag || "Song"
+    });
+  }
+  saveFavorites(favs);
+  updateHeartStatus();
+  render();
+  renderFavorites();
+  renderHistory();
+}
+
+function updateHeartStatus() {
+  const mobileFavBtn = $("#mobile-fav");
+  const track = cur >= 0 ? tracks[cur] : null;
+  const favorited = track && isFavorite(track.name);
+
+  if (mobileFavBtn) {
+    mobileFavBtn.classList.toggle("active", Boolean(favorited));
+    const path = mobileFavBtn.querySelector(".fav-heart-path");
+    if (path) {
+      path.setAttribute("fill", favorited ? "currentColor" : "none");
+    }
+  }
+}
+
+$("#mobile-fav")?.addEventListener("click", () => {
+  if (cur >= 0 && tracks[cur]) {
+    toggleFavorite(tracks[cur]);
+  }
+});
+
+function renderFavorites() {
+  const favs = getFavorites();
+  const list = $("#favorites-list");
+  const empty = $("#favorites-empty");
+  const badge = $("#fav-count-badge");
+  const playAll = $("#play-all-favs");
+
+  if (badge) badge.textContent = favs.length;
+
+  if (list && empty) {
+    if (!favs.length) {
+      list.innerHTML = "";
+      empty.hidden = false;
+      if (playAll) playAll.style.display = "none";
+      return;
+    }
+
+    empty.hidden = true;
+    if (playAll) playAll.style.display = "inline-block";
+    list.innerHTML = "";
+
+    favs.forEach((fav, i) => {
+      const li = document.createElement("li");
+      li.className = "view-track-item";
+
+      const playBtn = document.createElement("button");
+      playBtn.type = "button";
+      playBtn.className = "view-track-play";
+      playBtn.title = "Putar lagu";
+      playBtn.innerHTML = "▶";
+      playBtn.onclick = () => playFromExternal(fav);
+
+      const info = document.createElement("div");
+      info.className = "view-track-info";
+
+      const title = document.createElement("div");
+      title.className = "view-track-title";
+      title.textContent = fav.name;
+
+      const meta = document.createElement("div");
+      meta.className = "view-track-meta";
+      meta.textContent = fav.tag || "Favorite Track";
+
+      info.append(title, meta);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "view-track-btn is-fav";
+      removeBtn.title = "Hapus dari favorit";
+      removeBtn.textContent = "♥";
+      removeBtn.onclick = () => {
+        toggleFavorite(fav);
+        renderFavorites();
+      };
+
+      li.append(playBtn, info, removeBtn);
+      list.appendChild(li);
+    });
+  }
+}
+
+/* ===== RECENTLY PLAYED (HISTORY) ===== */
+
+function getHistory() {
+  try {
+    const data = JSON.parse(localStorage.getItem("ramphony_history") || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function addToHistory(track) {
+  if (!track || !track.name) return;
+  let history = getHistory();
+  history = history.filter(h => h.name !== track.name);
+  history.unshift({
+    name: track.name,
+    src: track.src,
+    tag: track.tag || "Song",
+    playedAt: Date.now()
+  });
+  if (history.length > 30) history = history.slice(0, 30);
+  localStorage.setItem("ramphony_history", JSON.stringify(history));
+  renderHistory();
+}
+
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return "Baru saja";
+  const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+  if (diffSec < 60) return "Baru saja";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} menit yang lalu`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} jam yang lalu`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay} hari yang lalu`;
+}
+
+function renderHistory() {
+  const history = getHistory();
+  const list = $("#history-list");
+  const empty = $("#history-empty");
+  const badge = $("#hist-count-badge");
+  const clearBtn = $("#clear-history");
+
+  if (badge) badge.textContent = history.length;
+
+  if (list && empty) {
+    if (!history.length) {
+      list.innerHTML = "";
+      empty.hidden = false;
+      if (clearBtn) clearBtn.style.display = "none";
+      return;
+    }
+
+    empty.hidden = true;
+    if (clearBtn) clearBtn.style.display = "inline-block";
+    list.innerHTML = "";
+
+    history.forEach(item => {
+      const li = document.createElement("li");
+      li.className = "view-track-item";
+
+      const playBtn = document.createElement("button");
+      playBtn.type = "button";
+      playBtn.className = "view-track-play";
+      playBtn.title = "Putar lagu";
+      playBtn.innerHTML = "▶";
+      playBtn.onclick = () => playFromExternal(item);
+
+      const info = document.createElement("div");
+      info.className = "view-track-info";
+
+      const title = document.createElement("div");
+      title.className = "view-track-title";
+      title.textContent = item.name;
+
+      const meta = document.createElement("div");
+      meta.className = "view-track-meta";
+      meta.textContent = formatTimeAgo(item.playedAt);
+
+      info.append(title, meta);
+
+      const favBtn = document.createElement("button");
+      favBtn.type = "button";
+      const fav = isFavorite(item.name);
+      favBtn.className = "view-track-btn" + (fav ? " is-fav" : "");
+      favBtn.title = fav ? "Hapus dari favorit" : "Tambah ke favorit";
+      favBtn.textContent = fav ? "♥" : "♡";
+      favBtn.onclick = () => {
+        toggleFavorite(item);
+        renderHistory();
+      };
+
+      li.append(playBtn, info, favBtn);
+      list.appendChild(li);
+    });
+  }
+}
+
+/* ===== PLAY FROM EXTERNAL VIEW ===== */
+
+function playFromExternal(item, switchHome = true) {
+  if (!item || !item.name) return;
+  const existingIdx = tracks.findIndex(t => t.name === item.name);
+  if (existingIdx >= 0) {
+    if (item.src) tracks[existingIdx].src = item.src;
+    if (item.tag) tracks[existingIdx].tag = item.tag;
+    load(existingIdx, true);
+  } else if (item.src) {
+    tracks.push({
+      name: item.name,
+      src: item.src,
+      tag: item.tag || "Playlist"
+    });
+    render();
+    load(tracks.length - 1, true);
+  }
+  if (switchHome) {
+    switchView("home");
+  }
+}
+
+/* ===== SETTINGS ===== */
+
+const DEFAULT_SETTINGS = {
+  autoplay: true,
+  visualizer: true,
+  volume: 80
+};
+
+function getSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("ramphony_settings") || "{}");
+    return { ...DEFAULT_SETTINGS, ...saved };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettings(settings) {
+  localStorage.setItem("ramphony_settings", JSON.stringify(settings));
+}
+
+function initSettings() {
+  const settings = getSettings();
+  const autoplayInput = $("#setting-autoplay");
+  const visualizerInput = $("#setting-visualizer");
+  const volRange = $("#setting-vol-range");
+  const volDisplay = $("#setting-vol-display");
+
+  if (autoplayInput) autoplayInput.checked = Boolean(settings.autoplay);
+  if (visualizerInput) visualizerInput.checked = Boolean(settings.visualizer);
+  if (volRange) {
+    volRange.value = settings.volume ?? 80;
+    if (volDisplay) volDisplay.textContent = `${volRange.value}%`;
+  }
+
+  autoplayInput?.addEventListener("change", e => {
+    const s = getSettings();
+    s.autoplay = e.target.checked;
+    saveSettings(s);
+  });
+
+  visualizerInput?.addEventListener("change", e => {
+    const s = getSettings();
+    s.visualizer = e.target.checked;
+    saveSettings(s);
+    if (!s.visualizer) stopVisualizer();
+    else if (!audio.paused) startVisualizer();
+  });
+
+  volRange?.addEventListener("input", e => {
+    const val = Number(e.target.value);
+    if (volDisplay) volDisplay.textContent = `${val}%`;
+    const s = getSettings();
+    s.volume = val;
+    saveSettings(s);
+    audio.volume = val / 100;
+    if ($("#vol")) $("#vol").value = val;
+    if ($("#volume-number")) $("#volume-number").textContent = val;
+  });
+
+  $("#btn-clear-hist-setting")?.addEventListener("click", () => {
+    if (confirm("Hapus seluruh riwayat pemutaran?")) {
+      localStorage.removeItem("ramphony_history");
+      renderHistory();
+      alert("Riwayat berhasil dihapus!");
+    }
+  });
+
+  $("#btn-clear-favs-setting")?.addEventListener("click", () => {
+    if (confirm("Kosongkan semua lagu favorit?")) {
+      localStorage.removeItem("ramphony_favorites");
+      renderFavorites();
+      updateHeartStatus();
+      render();
+      alert("Daftar favorit berhasil dikosongkan!");
+    }
+  });
+
+  $("#btn-reset-all-setting")?.addEventListener("click", () => {
+    if (confirm("Reset seluruh data lokal (pengaturan, riwayat, favorit, profil)?")) {
+      localStorage.removeItem("ramphony_settings");
+      localStorage.removeItem("ramphony_history");
+      localStorage.removeItem("ramphony_favorites");
+      localStorage.removeItem("ramphony_profile");
+      location.reload();
+    }
+  });
+}
+
+/* ===== VIEW NAVIGATION ===== */
+
+function switchView(page) {
+  const workspace = $(".workspace");
+  const favsView = $("#favorites-view");
+  const histView = $("#history-view");
+  const settingsView = $("#settings-view");
+  const links = document.querySelectorAll(".side-nav .nav-link");
+  const playlistOverlay = document.getElementById("playlist-overlay");
+  const profileOverlay = document.getElementById("profile-overlay");
+
+  if (page === "playlist") {
+    if (playlistOverlay) {
+      playlistOverlay.removeAttribute("hidden");
+      document.body.classList.add("page-overlay-open");
+      const frame = document.getElementById("playlist-frame");
+      if (frame && (!frame.src || frame.src === "about:blank" || frame.src.endsWith("about:blank"))) {
+        frame.src = "pages/playlist.html";
+      }
+      setTimeout(() => {
+        window.postMessage({ type: "RAMPHONY_TRIGGER_BROADCAST" }, "*");
+      }, 150);
+    }
+    closeMenu();
+  } else {
+    if (playlistOverlay) playlistOverlay.setAttribute("hidden", "");
+    if (profileOverlay) profileOverlay.setAttribute("hidden", "");
+    document.body.classList.remove("page-overlay-open");
+  }
+
+  links.forEach(l => {
+    l.classList.toggle("active", l.getAttribute("data-page") === page);
+  });
+
+  if (page !== "playlist") {
+    if (workspace) workspace.hidden = page !== "home";
+    if (favsView) favsView.hidden = page !== "favorites";
+    if (histView) histView.hidden = page !== "history";
+    if (settingsView) settingsView.hidden = page !== "settings";
+
+    if (page === "favorites") renderFavorites();
+    if (page === "history") renderHistory();
+  }
+}
+
+function initNavigation() {
+  const links = document.querySelectorAll(".side-nav .nav-link[data-page]");
+  links.forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const page = link.getAttribute("data-page");
+      switchView(page);
+      closeMenu();
+    });
+  });
+
+  $("#clear-history")?.addEventListener("click", () => {
+    if (confirm("Hapus seluruh riwayat pemutaran?")) {
+      localStorage.removeItem("ramphony_history");
+      renderHistory();
+    }
+  });
+
+  $("#play-all-favs")?.addEventListener("click", () => {
+    const favs = getFavorites();
+    if (!favs.length) return;
+    favs.forEach(f => {
+      if (!tracks.some(t => t.name === f.name)) {
+        tracks.push(f);
+      }
+    });
+    render();
+    const firstFavIdx = tracks.findIndex(t => t.name === favs[0].name);
+    if (firstFavIdx >= 0) load(firstFavIdx, true);
+    switchView("home");
+  });
+}
+
+
+/* ===== BROADCAST STATE TO EMBEDDED FRAMES ===== */
+
+function broadcastPlayerState() {
+  const currentTrack = cur >= 0 && tracks[cur] ? tracks[cur] : null;
+  const stateMessage = {
+    type: "RAMPHONY_PLAYER_STATE",
+    playing: !audio.paused && !audio.ended && (audio.currentTime > 0 || audio.readyState > 0),
+    paused: audio.paused,
+    currentTime: audio.currentTime || 0,
+    duration: audio.duration || 0,
+    trackName: currentTrack ? currentTrack.name : "",
+    trackTag: currentTrack ? currentTrack.tag : "",
+    isFav: currentTrack ? isFavorite(currentTrack.name) : false
+  };
+
+  const playlistFrame = document.getElementById("playlist-frame");
+  if (playlistFrame && playlistFrame.contentWindow) {
+    try {
+      playlistFrame.contentWindow.postMessage(stateMessage, "*");
+    } catch (e) {}
+  }
+}
+
+window.addEventListener("message", event => {
+  const data = event.data;
+  if (!data || typeof data !== "object") return;
+
+  if (data.type === "RAMPHONY_PLAY_TRACK") {
+    if (data.track) {
+      playFromExternal(data.track, false);
+    }
+  }
+
+  if (data.type === "RAMPHONY_PLAYER_TOGGLE") {
+    toggle();
+  }
+
+  if (data.type === "RAMPHONY_PLAYER_SEEK_RATIO") {
+    if (typeof data.ratio === "number" && Number.isFinite(audio.duration) && audio.duration > 0) {
+      audio.currentTime = data.ratio * audio.duration;
+      updateSeekFill();
+      broadcastPlayerState();
+    }
+  }
+
+  if (data.type === "RAMPHONY_PLAYER_VOLUME") {
+    if (typeof data.volume === "number") {
+      audio.volume = Math.max(0, Math.min(1, data.volume));
+    }
+  }
+
+  if (data.type === "RAMPHONY_REQUEST_STATE" || data.type === "RAMPHONY_TRIGGER_BROADCAST") {
+    broadcastPlayerState();
+  }
+});
+
 /* ===== INITIALIZATION ===== */
 
 render();
 updateState(false);
 updateSeekFill();
 updateProfile();
+updateHeartStatus();
+initSettings();
+initNavigation();
+renderFavorites();
+renderHistory();

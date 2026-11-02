@@ -15,7 +15,6 @@
     <!-- HEADER -->
     <header class="lyrics-header">
       <div class="brand">
-        <span class="brand-icon">♫</span>
         <span>RAMPHONY</span>
       </div>
 
@@ -57,8 +56,16 @@
     <!-- PLAYER FOOTER -->
     <footer class="lyrics-footer">
 
-      <!-- HANYA SATU SET TOMBOL -->
+      <!-- 5 TOMBOL KONTROL (SHUFFLE, PREV, PLAY, NEXT, REPEAT) -->
       <div class="lyrics-player-controls">
+        <button
+          id="lyrics-shuffle"
+          type="button"
+          title="Shuffle"
+          aria-label="Acak lagu"
+        >
+          ⇄
+        </button>
 
         <button
           id="lyrics-prev"
@@ -71,6 +78,7 @@
 
         <button
           id="lyrics-play"
+          class="main-play"
           type="button"
           title="Play / Pause"
           aria-label="Play atau Pause"
@@ -87,16 +95,19 @@
           ⏭
         </button>
 
+        <button
+          id="lyrics-repeat"
+          type="button"
+          title="Repeat"
+          aria-label="Ulangi lagu"
+        >
+          ↻
+        </button>
       </div>
 
-      <!-- SEEK BAR -->
+      <!-- SEEK BAR & VOLUME -->
       <div class="progress-row">
-
-        <div class="time-info">
-          <span id="lyrics-current">0:00</span>
-          <span class="time-divider">/</span>
-          <span id="lyrics-duration">0:00</span>
-        </div>
+        <span id="lyrics-current" class="lyrics-time">0:00</span>
 
         <input
           id="lyrics-progress"
@@ -108,29 +119,15 @@
           aria-label="Geser posisi lagu"
         >
 
+        <span id="lyrics-duration" class="lyrics-time">0:00</span>
+
+
         <!-- Dipertahankan untuk kompatibilitas lyrics.js -->
-        <div class="footer-actions">
-
-          <label class="upload-link" for="lyrics-file">
-            Upload Lyrics
-          </label>
-
-          <input
-            id="lyrics-file"
-            type="file"
-            accept=".txt,.lrc"
-            hidden
-          >
-
-          <button
-            id="delete-lyrics"
-            type="button"
-          >
-            Hapus Lyrics
-          </button>
-
+        <div class="footer-actions" hidden>
+          <label class="upload-link" for="lyrics-file">Upload Lyrics</label>
+          <input id="lyrics-file" type="file" accept=".txt,.lrc" hidden>
+          <button id="delete-lyrics" type="button">Hapus Lyrics</button>
         </div>
-
       </div>
 
     </footer>

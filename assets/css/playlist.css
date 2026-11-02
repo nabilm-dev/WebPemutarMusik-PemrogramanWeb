@@ -52,14 +52,50 @@ a {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 12px 30px;
+  padding: 8px 30px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
   border-bottom: 1px solid rgba(181, 228, 191, 0.12);
   box-sizing: border-box;
   min-height: 56px;
+  position: relative;
+}
+
+.menu-toggle {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform .2s;
+}
+
+.menu-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--mint);
+  border-radius: 3px;
+  transition: background .2s, transform .2s, box-shadow .2s;
+}
+
+.menu-toggle:hover {
+  background: transparent;
+  transform: scale(1.08);
+}
+
+.menu-toggle:hover span {
+  background: #d0f5d8;
+  box-shadow: 0 0 8px rgba(181, 228, 191, 0.5);
 }
 
 .logo {
@@ -108,7 +144,7 @@ a {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 30px 140px;
+  padding: 8px 30px 130px;
   flex: 1;
   min-width: 0;
   box-sizing: border-box;
@@ -121,8 +157,8 @@ a {
   color: #bbb;
   font-size: 13px;
   font-weight: 600;
-  padding: 9px 18px;
-  margin: 25px 0 20px;
+  padding: 8px 16px;
+  margin: 10px 0 16px;
   display: inline-flex;
   align-items: center;
   cursor: pointer;
@@ -140,7 +176,7 @@ a {
   align-items: end;
   justify-content: space-between;
   gap: 20px;
-  margin: 18px 0 24px;
+  margin: 4px 0 18px;
 }
 
 .eyebrow {
@@ -565,6 +601,31 @@ h1 span {
 .player-controls button.active {
   color: var(--mint);
 }
+.player-fav-btn {
+  background: none;
+  border: 0;
+  color: #8fa194;
+  font-size: 20px;
+  line-height: 1;
+  padding: 6px;
+  cursor: pointer;
+  transition: color .2s, transform .2s, opacity .2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.player-fav-btn:hover {
+  transform: scale(1.22);
+  color: #ff6b81;
+}
+
+.player-fav-btn.active {
+  color: #ff6b81;
+  text-shadow: 0 0 10px rgba(255, 107, 129, 0.5);
+}
 
 .player-controls .main-play {
   background: var(--mint);
@@ -583,13 +644,27 @@ h1 span {
 .player-progress {
   display: flex;
   align-items: center;
-  gap: 13px;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
 }
 
 .player-progress span {
   color: #aaa;
   font-size: 11px;
-  min-width: 35px;
+  min-width: 38px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-family: "Courier New", monospace;
+}
+
+#player-current {
+  text-align: left;
+}
+
+#player-duration {
+  text-align: right;
+  margin-left: auto;
 }
 
 .player-progress input {
@@ -730,17 +805,19 @@ h1 span {
   }
 
   .topbar {
-    padding: 20px 20px;
+    padding: 8px 20px;
+    min-height: 48px;
   }
 
   .main {
-    padding: 25px 20px 140px;
+    padding: 8px 20px 130px;
   }
 
   .page-heading {
     align-items: flex-start;
     flex-direction: column;
-    margin-top: 30px;
+    margin-top: 6px;
+    margin-bottom: 16px;
   }
 
   .playlist-hero {
