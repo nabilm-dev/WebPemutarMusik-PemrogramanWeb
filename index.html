@@ -353,7 +353,7 @@
       }
     </style>
     <link rel="stylesheet" href="assets/css/auth.css?v=2.6" />
-    <link rel="stylesheet" href="assets/css/chat.css?v=3.2" />
+    <link rel="stylesheet" href="assets/css/chat.css?v=3.5" />
 
     <!-- MOBILE CHAT FULLSCREEN STYLES (INLINE TO PREVENT BROWSER CACHE) -->
     <style id="chat-mobile-responsive-styles">
@@ -1798,6 +1798,38 @@
           </div>
         </div>
 
+        <!-- USER PROFILE PREVIEW CARD -->
+        <div id="chat-user-profile-sheet" class="chat-profile-sheet" hidden>
+          <div class="cps-card">
+            <button type="button" id="cps-close-btn" class="cps-close-btn" title="Tutup Profil">✕</button>
+            <div class="cps-avatar-wrap">
+              <div id="cps-avatar" class="cps-avatar">?</div>
+              <span id="cps-online-dot" class="cps-online-dot"></span>
+            </div>
+            <h2 id="cps-name" class="cps-name">-</h2>
+            <span id="cps-username" class="cps-username">@-</span>
+            <div id="cps-status-pill" class="cps-status-pill online">User Online</div>
+
+            <div class="cps-info-list">
+              <div class="cps-info-row" id="cps-bio-row">
+                <span class="cps-label">Bio</span>
+                <p id="cps-bio" class="cps-value">Tidak ada bio.</p>
+              </div>
+              <div class="cps-info-row" id="cps-artist-row">
+                <span class="cps-label">Artis Favorit</span>
+                <p id="cps-artist" class="cps-value">-</p>
+              </div>
+              <div class="cps-info-row" id="cps-email-row">
+                <span class="cps-label">Email</span>
+                <p id="cps-email" class="cps-value">-</p>
+              </div>
+            </div>
+
+            <div class="cps-actions">
+              <button type="button" id="cps-chat-btn" class="cps-chat-btn">💬 Kirim Pesan</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1808,7 +1840,7 @@
 
     <!-- AUTH & CHAT LOGIC -->
     <script src="assets/js/auth.js?v=3.2"></script>
-    <script src="assets/js/chat.js?v=3.7"></script>
+    <script src="assets/js/chat.js?v=4.1"></script>
 
   </body>
 </html>

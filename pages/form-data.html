@@ -545,6 +545,50 @@
             JSON.stringify(profile)
           );
 
+          // 1. Sinkronkan ramphony_user agar Chat & Topbar langsung terupdate
+          try {
+            const userStr = localStorage.getItem("ramphony_user");
+            if (userStr) {
+              const userObj = JSON.parse(userStr);
+              userObj.displayName = profile.displayName;
+              userObj.username = profile.username.toLowerCase();
+              if (profile.avatar) userObj.avatar = profile.avatar;
+              if (profile.bio) userObj.bio = profile.bio;
+              if (profile.favoriteArtist) userObj.favoriteArtist = profile.favoriteArtist;
+              localStorage.setItem("ramphony_user", JSON.stringify(userObj));
+            }
+          } catch (e) {}
+
+          // 2. Sinkronkan ramphony_registered_accounts agar teman chat melihat nama baru
+          try {
+            const regStr = localStorage.getItem("ramphony_registered_accounts");
+            if (regStr) {
+              const regList = JSON.parse(regStr);
+              if (Array.isArray(regList)) {
+                const uStr = localStorage.getItem("ramphony_user");
+                const myEmail = uStr ? JSON.parse(uStr).email : "";
+                regList.forEach(u => {
+                  if (u && (u.username === profile.username.toLowerCase() || (myEmail && u.email === myEmail))) {
+                    u.displayName = profile.displayName;
+                    u.username = profile.username.toLowerCase();
+                    if (profile.avatar) u.avatar = profile.avatar;
+                    if (profile.bio) u.bio = profile.bio;
+                    if (profile.favoriteArtist) u.favoriteArtist = profile.favoriteArtist;
+                  }
+                });
+                localStorage.setItem("ramphony_registered_accounts", JSON.stringify(regList));
+              }
+            }
+          } catch (e) {}
+
+          // 3. Beritahu aplikasi utama lewat postMessage
+          try {
+            window.parent.postMessage({
+              type: "RAMPHONY_PROFILE_UPDATED",
+              profile: profile
+            }, "*");
+          } catch (e) {}
+
           pageTitle.innerHTML = "Edit Your Profile<span>.</span>";
           formHeading.textContent = "Edit Profile";
           saveLabel.textContent = "Save Changes";

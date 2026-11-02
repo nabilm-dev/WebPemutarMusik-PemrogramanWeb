@@ -144,7 +144,7 @@
 
     if (data && (data.type === "RAMPHONY_AUTH_LOGIN" || data.type === "RAMPHONY_PROFILE_UPDATED" || data.type === "RAMPHONY_AUTH_CHANGE")) {
 
-      if (!data.user) {
+      if (data.type === "RAMPHONY_AUTH_CHANGE" && !data.user) {
 
         activeRecipientUsername = null;
 
@@ -152,9 +152,25 @@
 
       }
 
+      const me = getCurrentUser();
+
+      if (firestoreDb && me && (me.uid || me.email)) {
+
+        const docId = me.uid || (me.email ? me.email.replace(/[^a-zA-Z0-9]/g, "_") : me.username);
+
+        firestoreDb.collection("users").doc(docId).set(me, { merge: true }).catch(() => {});
+
+      }
+
       updateGreeting();
 
       renderInbox();
+
+      if (activeRecipientUsername) {
+
+        openConversation(activeRecipientUsername);
+
+      }
 
     }
 
@@ -167,81 +183,45 @@
      ======================================================== */
 
   function getCurrentUser() {
-
-    try {
-
-      const s = localStorage.getItem(SESSION_USER_KEY);
-
-      if (s) {
-
-        const u = JSON.parse(s);
-
-        if (u && (u.username || u.displayName || u.email)) {
-
-          return {
-
-            uid: u.uid || "",
-
-            email: String(u.email || "").toLowerCase().trim(),
-
-            username: String(u.username || "").toLowerCase().trim(),
-
-            displayName: String(u.displayName || u.username || (u.email ? u.email.split("@")[0] : "User")).trim(),
-
-            avatar: u.avatar || ""
-
-          };
-
-        }
-
-      }
-
-    } catch (e) {}
-
-    try {
-
-      const p = localStorage.getItem(PROFILE_KEY);
-
-      if (p) {
-
-        const parsed = JSON.parse(p);
-
-        if (parsed && (parsed.username || parsed.displayName)) {
-
-          return {
-
-            uid: "",
-
-            email: String(parsed.email || "").toLowerCase().trim(),
-
-            username: String(parsed.username || "").toLowerCase().trim(),
-
-            displayName: String(parsed.displayName || parsed.username || "User").trim(),
-
-            avatar: parsed.avatar || ""
-
-          };
-
-        }
-
-      }
-
-    } catch (e) {}
-
-    return {
-
+    let user = {
       uid: "",
-
       email: "",
-
       username: "",
-
       displayName: "User",
-
       avatar: ""
-
     };
 
+    try {
+      const s = localStorage.getItem(SESSION_USER_KEY);
+      if (s) {
+        const u = JSON.parse(s);
+        if (u) {
+          if (u.uid) user.uid = u.uid;
+          if (u.email) user.email = String(u.email).toLowerCase().trim();
+          if (u.username) user.username = String(u.username).toLowerCase().trim();
+          if (u.displayName) user.displayName = String(u.displayName).trim();
+          if (u.avatar) user.avatar = u.avatar;
+        }
+      }
+    } catch (e) {}
+
+    // SELALU prioritaskan nama terbaru dari PROFILE_KEY (ramphony_profile) jika sudah diedit!
+    try {
+      const p = localStorage.getItem(PROFILE_KEY);
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (parsed) {
+          if (parsed.displayName) user.displayName = String(parsed.displayName).trim();
+          if (parsed.username) user.username = String(parsed.username).toLowerCase().trim();
+          if (parsed.avatar) user.avatar = parsed.avatar;
+          if (parsed.bio) user.bio = parsed.bio;
+          if (parsed.favoriteArtist) user.favoriteArtist = parsed.favoriteArtist;
+          if (parsed.email && !user.email) user.email = String(parsed.email).toLowerCase().trim();
+        }
+      }
+    } catch (e) {}
+
+    return user;
   }
 
   function getRegisteredUsers() {
@@ -392,6 +372,8 @@
 
       if (me.email && u.email && me.email.toLowerCase() === String(u.email).toLowerCase()) return false;
 
+      if (me.username && u.username && me.username.toLowerCase() === String(u.username).toLowerCase()) return false;
+
       return true;
 
     });
@@ -458,6 +440,12 @@
 
       const isOnline = user.online !== false;
 
+      const hasAvatar = user.avatar && (user.avatar.startsWith("data:") || user.avatar.startsWith("http"));
+
+      const avatarMarkup = hasAvatar
+        ? `<img src="${user.avatar}" alt="${escapeHtml(user.displayName || user.username)}" class="chat-item-avatar-img">`
+        : escapeHtml(initial);
+
       let snippet = "Mulai obrolan dengan user ini...";
 
       let timeText = "";
@@ -474,9 +462,9 @@
 
       item.innerHTML = `
 
-        <div class="chat-item-avatar-wrap">
+        <div class="chat-item-avatar-wrap" data-profile-user="${escapeHtml(user.username)}" title="Lihat Profil">
 
-          <div class="chat-item-avatar">${escapeHtml(initial)}</div>
+          <div class="chat-item-avatar">${avatarMarkup}</div>
 
           <span class="chat-item-dot ${isOnline ? "" : "offline"}" title="${isOnline ? 'Online' : 'Offline'}"></span>
 
@@ -506,6 +494,116 @@
 
     });
 
+  }
+
+
+  /* ========================================================
+     USER PROFILE PREVIEW MODAL / SHEET
+     ======================================================== */
+  function showUserProfile(targetUsername) {
+    if (!targetUsername) return;
+
+    const allUsers = getRegisteredUsers();
+    let target = allUsers.find(u => u && u.username && u.username.toLowerCase() === String(targetUsername).toLowerCase().trim());
+
+    const me = getCurrentUser();
+    if (!target && me && me.username && me.username.toLowerCase() === String(targetUsername).toLowerCase().trim()) {
+      target = me;
+    }
+
+    try {
+      const p = localStorage.getItem(PROFILE_KEY);
+      if (p) {
+        const parsed = JSON.parse(p);
+        if (parsed && target && (
+          (parsed.username && parsed.username.toLowerCase() === target.username?.toLowerCase()) ||
+          (parsed.email && parsed.email.toLowerCase() === target.email?.toLowerCase())
+        )) {
+          target = { ...target, ...parsed };
+        }
+      }
+    } catch (e) {}
+
+    if (!target) {
+      target = {
+        username: targetUsername,
+        displayName: targetUsername,
+        online: true
+      };
+    }
+
+    const sheet = document.getElementById("chat-user-profile-sheet");
+    if (!sheet) return;
+
+    const nameEl = document.getElementById("cps-name");
+    const unameEl = document.getElementById("cps-username");
+    const avatarEl = document.getElementById("cps-avatar");
+    const onlineDot = document.getElementById("cps-online-dot");
+    const statusPill = document.getElementById("cps-status-pill");
+    const bioEl = document.getElementById("cps-bio");
+    const artistEl = document.getElementById("cps-artist");
+    const emailEl = document.getElementById("cps-email");
+    const chatBtn = document.getElementById("cps-chat-btn");
+
+    const displayName = target.displayName || target.username || "Pengguna";
+    const username = target.username || targetUsername;
+    const isOnline = target.online !== false;
+
+    if (nameEl) nameEl.textContent = displayName;
+    if (unameEl) unameEl.textContent = `@${username}`;
+
+    if (avatarEl) {
+      if (target.avatar && (target.avatar.startsWith("data:") || target.avatar.startsWith("http"))) {
+        avatarEl.innerHTML = `<img src="${target.avatar}" alt="${escapeHtml(displayName)}" class="chat-item-avatar-img">`;
+      } else {
+        avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      }
+    }
+
+    if (onlineDot) {
+      onlineDot.style.background = isOnline ? "#2ed573" : "#6c757d";
+      onlineDot.style.boxShadow = isOnline ? "0 0 8px #2ed573" : "none";
+    }
+
+    if (statusPill) {
+      statusPill.className = `cps-status-pill ${isOnline ? "online" : "offline"}`;
+      statusPill.textContent = isOnline ? "User Online" : "User Offline";
+    }
+
+    if (bioEl) {
+      bioEl.textContent = target.bio && target.bio.trim() ? target.bio.trim() : "Belum menambahkan bio.";
+    }
+
+    if (artistEl) {
+      artistEl.textContent = target.favoriteArtist || target.artist || "-";
+    }
+
+    if (emailEl) {
+      emailEl.textContent = target.email || "-";
+    }
+
+    if (chatBtn) {
+      // If viewing your own profile, change button text or hide chat button
+      if (me && me.username && me.username.toLowerCase() === username.toLowerCase()) {
+        chatBtn.textContent = "👤 Profil Saya";
+        chatBtn.onclick = () => {
+          sheet.hidden = true;
+        };
+      } else {
+        chatBtn.textContent = "💬 Kirim Pesan";
+        chatBtn.onclick = () => {
+          sheet.hidden = true;
+          openConversation(username);
+        };
+      }
+    }
+
+    sheet.hidden = false;
+  }
+
+  function hideUserProfile() {
+    const sheet = document.getElementById("chat-user-profile-sheet");
+    if (sheet) sheet.hidden = true;
   }
 
   /* ========================================================
@@ -552,7 +650,13 @@
 
     const isOnline = user.online !== false;
 
-    if (avatarEl) avatarEl.textContent = initial;
+    if (avatarEl) {
+      if (user.avatar && (user.avatar.startsWith("data:") || user.avatar.startsWith("http"))) {
+        avatarEl.innerHTML = `<img src="${user.avatar}" alt="${escapeHtml(user.displayName || user.username)}" class="chat-item-avatar-img">`;
+      } else {
+        avatarEl.textContent = initial;
+      }
+    }
 
     if (nameEl) nameEl.textContent = `${user.displayName} (@${user.username})`;
 
@@ -672,17 +776,34 @@
 
             </div>
 
-            <div class="chat-song-actions-row">
-              <button
-                type="button"
-                class="chat-song-play-action-btn"
-                data-track='${encodeURIComponent(JSON.stringify(s))}'
-                title="Dengarkan Lagu Ini di Player Ramphony"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <!-- VOICE NOTE STYLE AUDIO CONTROLLER -->
+            <div class="chat-vn-player" data-track='${encodeURIComponent(JSON.stringify(s))}'>
+              <button type="button" class="chat-vn-toggle-btn" title="Putar / Jeda Lagu">
+                <svg class="chat-vn-icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8 5v14l11-7z"/>
                 </svg>
-                <span>Dengarkan</span>
+                <svg class="chat-vn-icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+              </button>
+              <div class="chat-vn-track-wrap">
+                <div class="chat-vn-slider-wrap">
+                  <input type="range" class="chat-vn-slider" min="0" max="100" value="0" step="0.1" />
+                </div>
+                <div class="chat-vn-time-row">
+                  <span class="chat-vn-cur-time">0:00</span>
+                  <span class="chat-vn-dur-time">--:--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ACTIONS: Open in Main Player & Download -->
+            <div class="chat-song-actions-row">
+              <button type="button" class="chat-song-main-player-btn" title="Buka dan Putar di Player Utama">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+                </svg>
+                <span>Buka di Player</span>
               </button>
               ${
                 s.src && s.src.startsWith("http") && !s.src.startsWith("blob:")
@@ -1381,6 +1502,9 @@
 
     document.body.classList.add("modal-open");
 
+    updateGreeting();
+    renderInbox();
+
     // Publish current user to Firestore so other devices see us immediately
 
     try {
@@ -1681,6 +1805,66 @@
 
   } catch (e) {}
 
+
+  /* ========================================================
+     VOICE-NOTE AUDIO SYNC & CONTROLS IN CHAT BUBBLES
+     ======================================================== */
+  function formatChatTime(sec) {
+    if (!Number.isFinite(sec) || sec < 0) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  }
+
+  function syncChatVoiceNotes() {
+    const audioEl = document.getElementById("a");
+    if (!audioEl) return;
+
+    const vnPlayers = document.querySelectorAll(".chat-vn-player");
+    vnPlayers.forEach(container => {
+      const raw = container.getAttribute("data-track");
+      if (!raw) return;
+
+      let track = null;
+      try { track = JSON.parse(decodeURIComponent(raw)); } catch (e) { return; }
+
+      const toggleBtn = container.querySelector(".chat-vn-toggle-btn");
+      const iconPlay = container.querySelector(".chat-vn-icon-play");
+      const iconPause = container.querySelector(".chat-vn-icon-pause");
+      const slider = container.querySelector(".chat-vn-slider");
+      const curTimeEl = container.querySelector(".chat-vn-cur-time");
+      const durTimeEl = container.querySelector(".chat-vn-dur-time");
+
+      const isCurrentAudio = audioEl.src && track.src && (
+        audioEl.src === track.src || 
+        audioEl.src.endsWith(encodeURI(track.src)) ||
+        (track.name && window.RamphonyPlayer?.getCurrentTrack()?.name === track.name)
+      );
+
+      const isPlaying = isCurrentAudio && !audioEl.paused;
+
+      if (toggleBtn) {
+        toggleBtn.classList.toggle("playing", Boolean(isPlaying));
+      }
+      if (iconPlay && iconPause) {
+        iconPlay.style.display = isPlaying ? "none" : "block";
+        iconPause.style.display = isPlaying ? "block" : "none";
+      }
+
+      if (isCurrentAudio) {
+        const cur = audioEl.currentTime || 0;
+        const dur = audioEl.duration || 0;
+        if (slider && document.activeElement !== slider) {
+          slider.value = dur > 0 ? (cur / dur) * 100 : 0;
+        }
+        if (curTimeEl) curTimeEl.textContent = formatChatTime(cur);
+        if (durTimeEl && Number.isFinite(dur) && dur > 0) durTimeEl.textContent = formatChatTime(dur);
+      } else {
+        if (!isPlaying && toggleBtn) toggleBtn.classList.remove("playing");
+      }
+    });
+  }
+
   function init() {
 
     // Topbar Open Button
@@ -1847,51 +2031,86 @@
 
     });
 
-    // Delegate play shared song in chat list
-
+    // Delegate Voice-Note style audio playback and controls in chat
     document.getElementById("chat-messages-list")?.addEventListener("click", e => {
+      // 1. Play / Pause button
+      const vnBtn = e.target.closest(".chat-vn-toggle-btn");
+      if (vnBtn) {
+        const container = vnBtn.closest(".chat-vn-player");
+        const raw = container?.getAttribute("data-track");
+        if (!raw) return;
 
-      const playBtn = e.target.closest(".chat-song-play-action-btn");
+        try {
+          const track = JSON.parse(decodeURIComponent(raw));
+          const audioEl = document.getElementById("a");
 
-      if (playBtn) {
+          const isCurrentAudio = audioEl && audioEl.src && track.src && (
+            audioEl.src === track.src ||
+            audioEl.src.endsWith(encodeURI(track.src)) ||
+            (track.name && window.RamphonyPlayer?.getCurrentTrack()?.name === track.name)
+          );
 
-        const raw = playBtn.getAttribute("data-track");
-
-        if (raw) {
-
-          try {
-
-            const track = JSON.parse(decodeURIComponent(raw));
-
-            if (typeof window.playFromExternal === "function") {
-
-              window.playFromExternal(track, false);
-
-            } else if (window.RamphonyPlayer && typeof window.RamphonyPlayer.playTrack === "function") {
-
-              window.RamphonyPlayer.playTrack(track);
-
+          if (isCurrentAudio && audioEl) {
+            if (audioEl.paused) {
+              audioEl.play().catch(err => console.warn("Play error:", err));
+            } else {
+              audioEl.pause();
             }
-
-            showToast(`🎵 Memutar lagu: ${track.title || track.name}`);
-
-            playBtn.classList.add("playing-pulse");
-
-            setTimeout(() => playBtn.classList.remove("playing-pulse"), 1500);
-
-          } catch (err) {
-
-            console.error("Failed to play shared track:", err);
-
+          } else {
+            if (typeof window.playFromExternal === "function") {
+              window.playFromExternal(track, false);
+            } else if (window.RamphonyPlayer?.playTrack) {
+              window.RamphonyPlayer.playTrack(track);
+            }
           }
-
+          setTimeout(syncChatVoiceNotes, 60);
+        } catch (err) {
+          console.error("Failed to toggle voice-note audio:", err);
         }
-
+        return;
       }
 
+      // 2. Open in Main Player button
+      const mainPlayerBtn = e.target.closest(".chat-song-main-player-btn");
+      if (mainPlayerBtn) {
+        const container = mainPlayerBtn.closest(".chat-bubble-song")?.querySelector(".chat-vn-player");
+        const raw = container?.getAttribute("data-track");
+        if (raw) {
+          try {
+            const track = JSON.parse(decodeURIComponent(raw));
+            if (typeof window.playFromExternal === "function") {
+              window.playFromExternal(track, true);
+            }
+            closeChat();
+          } catch (err) {
+            console.error("Failed to open track in player:", err);
+          }
+        }
+        return;
+      }
     });
 
-    // Broadcast discovery when chat opens
+    // Seek scrubber inside chat bubble
+    document.getElementById("chat-messages-list")?.addEventListener("input", e => {
+      const slider = e.target.closest(".chat-vn-slider");
+      if (slider) {
+        const audioEl = document.getElementById("a");
+        if (audioEl && Number.isFinite(audioEl.duration) && audioEl.duration > 0) {
+          audioEl.currentTime = (Number(slider.value) / 100) * audioEl.duration;
+          syncChatVoiceNotes();
+        }
+      }
+    });
+
+    // Listen to main audio element to sync voice notes in chat
+    const mainAudio = document.getElementById("a");
+    if (mainAudio) {
+      mainAudio.addEventListener("timeupdate", syncChatVoiceNotes);
+      mainAudio.addEventListener("play", syncChatVoiceNotes);
+      mainAudio.addEventListener("pause", syncChatVoiceNotes);
+      mainAudio.addEventListener("ended", syncChatVoiceNotes);
+    }
+// Broadcast discovery when chat opens
 
     if (broadcastChannel) {
 
