@@ -899,6 +899,14 @@ audio.addEventListener("error", () => {
     audio.play().catch(err => console.warn("Retry failed:", err));
     return;
   }
+  if (audio.src && !audio.src.includes("demolagu/")) {
+    console.log("Cross-device fallback: memutar audio demo...");
+    audio.removeAttribute("crossorigin");
+    audio.src = encodeURI("demolagu/Rex Orange County - Best Friend.mp3");
+    audio.load();
+    audio.play().catch(err => console.warn("Demo fallback failed:", err));
+    return;
+  }
   updateState(false);
 });
 
@@ -1272,6 +1280,12 @@ function renderHistory() {
 
 function playFromExternal(item, switchHome = false) {
   if (!item || !item.name) return;
+
+  // Cross-device safety: if src is a blob from another device or missing, fallback to demo audio
+  if (item.src && item.src.startsWith("blob:") && !item.src.includes(location.host)) {
+    item.src = encodeURI("demolagu/Rex Orange County - Best Friend.mp3");
+  }
+
   const existingIdx = tracks.findIndex(t => t.name === item.name);
   let targetIdx;
 
