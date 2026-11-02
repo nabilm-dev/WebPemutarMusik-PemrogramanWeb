@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ramphony - Offline Music Player</title>
 
-    <link rel="stylesheet" href="assets/css/style.css?v=11" />
+    <link rel="stylesheet" href="assets/css/style.css?v=12" />
     <link rel="stylesheet" href="assets/css/tutorial.css" />
 
     <style>
@@ -1382,6 +1382,20 @@
             closeOverlay(profileOverlay);
           }
 
+          if (data.type === "RAMPHONY_TRIGGER_LOGOUT") {
+            closeOverlay(profileOverlay);
+            if (window.RamphonyAuth && typeof window.RamphonyAuth.logout === "function") {
+              window.RamphonyAuth.logout();
+            }
+          }
+
+          if (data.type === "RAMPHONY_OPEN_AUTH") {
+            closeOverlay(profileOverlay);
+            if (typeof window.openAuthModal === "function") {
+              window.openAuthModal("login");
+            }
+          }
+
           if (data.type === "RAMPHONY_CLOSE_PLAYLIST") {
             closeOverlay(playlistOverlay);
           }
@@ -1556,6 +1570,7 @@
               <h2 id="chat-inbox-my-name" class="chat-user-headline">User</h2>
             </div>
             <div class="chat-inbox-actions">
+              <button id="chat-inbox-refresh" class="chat-round-btn" type="button" title="Segarkan Kontak">🔄</button>
               <button id="chat-inbox-close" class="chat-round-btn" type="button" title="Tutup Chat">✕</button>
             </div>
           </header>
@@ -1678,8 +1693,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <!-- AUTH & CHAT LOGIC -->
-    <script src="assets/js/auth.js"></script>
-    <script src="assets/js/chat.js"></script>
+    <script src="assets/js/auth.js?v=3.1"></script>
+    <script src="assets/js/chat.js?v=3.1"></script>
 
   </body>
 </html>

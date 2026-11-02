@@ -182,17 +182,21 @@
               authBtn.style.background = "rgba(235, 87, 87, 0.12)";
               authBtn.style.borderColor = "rgba(235, 87, 87, 0.3)";
               authBtn.onclick = () => {
-                // Clear all session & account cache for clean account switching
+                // Clear all session & account cache
                 localStorage.removeItem("ramphony_user");
                 localStorage.removeItem("ramphony_profile");
                 localStorage.removeItem("ramphony_registered_accounts");
                 localStorage.removeItem("ramphony_user_chat_threads_v3");
                 sessionStorage.clear();
-                loadProfile();
-                try {
-                  window.parent?.postMessage({ type: "RAMPHONY_AUTH_CHANGE", user: null }, "*");
-                } catch (e) {}
-                window.postMessage({ type: "RAMPHONY_AUTH_CHANGE", user: null }, "*");
+
+                if (window.parent && window.parent !== window) {
+                  try {
+                    window.parent.postMessage({ type: "RAMPHONY_TRIGGER_LOGOUT" }, "*");
+                    window.parent.postMessage({ type: "RAMPHONY_CLOSE_PROFILE" }, "*");
+                  } catch (e) {}
+                } else {
+                  window.location.href = "../index.html";
+                }
               };
             } else {
               authBtn.textContent = "Masuk / Daftar";
@@ -200,7 +204,14 @@
               authBtn.style.background = "rgba(181, 228, 191, 0.12)";
               authBtn.style.borderColor = "rgba(181, 228, 191, 0.3)";
               authBtn.onclick = () => {
-                window.location.href = "../index.html";
+                if (window.parent && window.parent !== window) {
+                  try {
+                    window.parent.postMessage({ type: "RAMPHONY_CLOSE_PROFILE" }, "*");
+                    window.parent.postMessage({ type: "RAMPHONY_OPEN_AUTH" }, "*");
+                  } catch (e) {}
+                } else {
+                  window.location.href = "../index.html";
+                }
               };
             }
           }
