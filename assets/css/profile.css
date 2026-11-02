@@ -34,25 +34,40 @@ a {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 28px 30px;
+  padding: 12px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  min-height: 56px;
+  box-sizing: border-box;
 }
 
 .logo {
   color: var(--mint);
   font-size: 24px;
   font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  line-height: 1;
+  margin: 0;
 }
 
 .back-btn {
-  padding: 11px 18px;
+  height: 38px;
+  padding: 0 18px;
+  box-sizing: border-box;
   color: #ddd;
   border: 1px solid #444;
   border-radius: 999px;
   font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
 }
 
 .back-btn:hover {
@@ -64,7 +79,7 @@ a {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 35px 30px 80px;
+  padding: 20px 30px 80px;
   flex: 1;
 }
 

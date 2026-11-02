@@ -12,8 +12,8 @@
   <div class="app">
 
     <header class="topbar">
-      <a href="../index.html" class="logo">♫ Ramphony</a>
-      <a href="../index.html" class="back-btn">← Back to Player</a>
+      <a href="../index.html" class="back-btn">Back to Player</a>
+      <a href="../index.html" class="logo">Ramphony</a>
     </header>
 
     <main class="container">
@@ -375,6 +375,52 @@
       loadProfile();
       loadCollection();
 
+    })();
+  </script>
+
+  <!-- OVERLAY NAVIGATION: close overlay when inside index.html iframe -->
+  <script>
+    (function () {
+      "use strict";
+
+      const isEmbedded = window.parent !== window;
+      if (!isEmbedded) return;
+
+      function sendToParent(type) {
+        window.parent.postMessage({ type: type }, window.location.origin);
+      }
+
+      document.addEventListener('click', function (event) {
+        const link = event.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href) return;
+        let url;
+        try { url = new URL(href, document.baseURI); } catch { return; }
+        if (url.origin !== location.origin) return;
+        const path = url.pathname;
+
+        /* Back to Player -> close profile overlay */
+        if (path.endsWith('/index.html')) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          sendToParent('RAMPHONY_CLOSE_PROFILE');
+          return;
+        }
+
+        /* Edit Profile -> load form-data inside this same iframe */
+        if (path.endsWith('/pages/form-data.html')) {
+          return;
+        }
+
+        /* Playlist link */
+        if (path.endsWith('/pages/playlist.html')) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          sendToParent('RAMPHONY_OPEN_PLAYLIST');
+          return;
+        }
+      }, true);
     })();
   </script>
 

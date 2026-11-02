@@ -56,11 +56,11 @@
 
     <header class="profile-topbar">
       <a href="../index.html" class="brand">
-        ♫ Ramphony
+        Ramphony
       </a>
 
       <a href="profile.html" class="back-link">
-        ← My Profile
+        My Profile
       </a>
     </header>
 
@@ -421,6 +421,45 @@
 
       loadProfile();
 
+    })();
+  </script>
+
+  <!-- OVERLAY NAVIGATION: when inside profile iframe -->
+  <script>
+    (function () {
+      "use strict";
+
+      const isEmbedded = window.parent !== window;
+      if (!isEmbedded) return;
+
+      function sendToParent(type) {
+        window.parent.postMessage({ type: type }, window.location.origin);
+      }
+
+      document.addEventListener('click', function (event) {
+        const link = event.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href) return;
+        let url;
+        try { url = new URL(href, document.baseURI); } catch { return; }
+        if (url.origin !== location.origin) return;
+        const path = url.pathname;
+
+        /* Brand logo / any home link -> close overlay */
+        if (path.endsWith('/index.html')) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          sendToParent('RAMPHONY_CLOSE_PROFILE');
+          return;
+        }
+
+        /* <- My Profile -> navigate back inside the same iframe */
+        if (path.endsWith('/pages/profile.html')) {
+          /* normal in-iframe navigation, music unaffected */
+          return;
+        }
+      }, true);
     })();
   </script>
 

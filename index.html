@@ -308,6 +308,41 @@
         height: 100% !important;
         border: none !important;
       }
+
+      /* PAGE OVERLAYS (Profile, Playlist) */
+
+      .page-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        background: rgba(0, 0, 0, 0.88);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-y: auto;
+      }
+
+      .page-overlay[hidden] {
+        display: none !important;
+      }
+
+      .page-overlay-inner {
+        width: 100%;
+        min-height: 100%;
+        background: #101010;
+        position: relative;
+      }
+
+      .page-overlay-inner iframe {
+        display: block;
+        width: 100%;
+        min-height: 100vh;
+        border: 0;
+      }
+
+      body.page-overlay-open {
+        overflow: hidden;
+      }
     </style>
   </head>
 
@@ -331,7 +366,7 @@
 
       <!-- SIDEBAR -->
       <aside id="sidebar" class="sidebar">
-        <a href="index.html" class="logo">♫ Ramphony</a>
+        <a href="index.html" class="logo">Ramphony</a>
 
         <nav class="side-nav">
           <p class="nav-heading">MENU UTAMA</p>
@@ -343,7 +378,7 @@
           <p class="nav-heading">YOUR LIBRARY</p>
 
           <a href="pages/playlist.html" class="nav-link">
-            <span>♫</span> My Playlist
+            <span>♫</span> Playlist
           </a>
 
           <a href="#" class="nav-link" data-page="favorites">
@@ -375,8 +410,6 @@
         <!-- HEADER -->
         <header class="topbar">
           <a href="index.html" class="mobile-logo logo"> Ramphony </a>
-
-          <a href="index.html" class="topbar-label"> OFFLINE MUSIC PLAYER </a>
 
           <a
             href="pages/profile.html"
@@ -650,6 +683,28 @@
       </div>
     </div>
 
+    <!-- PROFILE OVERLAY -->
+    <div id="profile-overlay" class="page-overlay" hidden>
+      <div class="page-overlay-inner" role="dialog" aria-modal="true" aria-label="My Profile">
+        <iframe
+          id="profile-frame"
+          src="about:blank"
+          title="My Profile"
+        ></iframe>
+      </div>
+    </div>
+
+    <!-- PLAYLIST OVERLAY -->
+    <div id="playlist-overlay" class="page-overlay" hidden>
+      <div class="page-overlay-inner" role="dialog" aria-modal="true" aria-label="Playlist">
+        <iframe
+          id="playlist-frame"
+          src="about:blank"
+          title="Playlist"
+        ></iframe>
+      </div>
+    </div>
+
     <!-- MAIN PLAYER -->
     <script src="assets/js/player.js"></script>
 
@@ -727,52 +782,135 @@
     <!-- TUTORIAL -->
     <script src="assets/js/tutorial.js"></script>
 
+    <!-- PAGE OVERLAY LOGIC (Profile & Playlist) -->
     <script>
       (() => {
-        document.addEventListener(
-          "click",
-          function (event) {
-            const link = event.target.closest("a[href]");
-            if (!link) return;
+        "use strict";
 
-            const href = link.getAttribute("href");
-            if (!href) return;
+        const profileOverlay = document.getElementById("profile-overlay");
+        const profileFrame   = document.getElementById("profile-frame");
+        const playlistOverlay = document.getElementById("playlist-overlay");
+        const playlistFrame   = document.getElementById("playlist-frame");
 
-            let destination = null;
+        let profileLoaded  = false;
+        let playlistLoaded = false;
 
-            try {
-              const url = new URL(href, document.baseURI);
+        function openOverlay(overlay) {
+          overlay.removeAttribute("hidden");
+          document.body.classList.add("page-overlay-open");
+        }
 
-              if (url.origin !== location.origin) return;
+        function closeOverlay(overlay) {
+          overlay.setAttribute("hidden", "");
+          document.body.classList.remove("page-overlay-open");
+        }
 
-              if (url.pathname.endsWith("/index.html")) {
-                destination = "home";
-              }
+        function openProfile() {
+          if (!profileLoaded) {
+            profileFrame.src = "pages/profile.html";
+            profileLoaded = true;
+          }
+          openOverlay(profileOverlay);
+        }
 
-              if (url.pathname.endsWith("/pages/playlist.html")) {
-                destination = "playlist";
-              }
-            } catch {
-              return;
-            }
+        function openPlaylist() {
+          if (!playlistLoaded) {
+            playlistFrame.src = "pages/playlist.html";
+            playlistLoaded = true;
+          }
+          openOverlay(playlistOverlay);
+        }
 
-            if (!destination) return;
+        /* ---- Intercept link clicks ---- */
+        document.addEventListener("click", function (event) {
+          const link = event.target.closest("a[href]");
+          if (!link) return;
 
-            if (window.parent === window) return;
+          const href = link.getAttribute("href");
+          if (!href) return;
 
+          let url;
+          try {
+            url = new URL(href, document.baseURI);
+          } catch {
+            return;
+          }
+
+          if (url.origin !== location.origin) return;
+
+          const path = url.pathname;
+
+          if (path.endsWith("/pages/profile.html") || path.endsWith("/pages/form-data.html")) {
             event.preventDefault();
             event.stopImmediatePropagation();
+            openProfile();
+            return;
+          }
 
-            window.parent.postMessage(
-              {
-                type: "RAMPHONY_NAVIGATE",
-                page: destination,
-              },
-              location.origin,
-            );
-          },
-          true,
-        );
+          if (path.endsWith("/pages/playlist.html")) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            openPlaylist();
+            return;
+          }
+
+          /* Legacy: if inside an iframe and navigating home/playlist */
+          if (window.parent !== window) {
+            let destination = null;
+            if (path.endsWith("/index.html")) destination = "home";
+            if (path.endsWith("/pages/playlist.html")) destination = "playlist";
+            if (destination) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              window.parent.postMessage(
+                { type: "RAMPHONY_NAVIGATE", page: destination },
+                location.origin,
+              );
+            }
+          }
+        }, true);
+
+        /* ---- Listen messages from iframes ---- */
+        window.addEventListener("message", function (event) {
+          if (event.origin !== location.origin) return;
+
+          const data = event.data;
+          if (!data || typeof data !== "object") return;
+
+          if (data.type === "RAMPHONY_CLOSE_PROFILE") {
+            closeOverlay(profileOverlay);
+          }
+
+          if (data.type === "RAMPHONY_CLOSE_PLAYLIST") {
+            closeOverlay(playlistOverlay);
+          }
+
+          if (data.type === "RAMPHONY_OPEN_PROFILE") {
+            openProfile();
+          }
+
+          if (data.type === "RAMPHONY_OPEN_PLAYLIST") {
+            openPlaylist();
+          }
+
+          if (data.type === "RAMPHONY_NAVIGATE") {
+            if (data.page === "home") {
+              closeOverlay(profileOverlay);
+              closeOverlay(playlistOverlay);
+            }
+            if (data.page === "playlist") {
+              closeOverlay(profileOverlay);
+              openPlaylist();
+            }
+          }
+        });
+
+        /* ---- Escape key ---- */
+        document.addEventListener("keydown", function (event) {
+          if (event.key !== "Escape") return;
+          if (!profileOverlay.hidden)  closeOverlay(profileOverlay);
+          if (!playlistOverlay.hidden) closeOverlay(playlistOverlay);
+        });
       })();
     </script>
   </body>

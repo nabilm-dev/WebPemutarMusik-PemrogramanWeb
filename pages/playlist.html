@@ -3,35 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Playlist | Ramphony</title>
+    <title>Playlist | Ramphony</title>
     <link rel="stylesheet" href="../assets/css/playlist.css" />
   </head>
   <body>
     <div class="app">
-      <aside class="sidebar">
-        <a class="logo" href="../index.html">♫ Ramphony</a>
-        <p class="nav-heading">MENU UTAMA</p>
-        <a class="nav-link" href="../index.html">⌂ Home</a>
-        <p class="nav-heading">YOUR LIBRARY</p>
-        <a class="nav-link active" href="playlist.html">♫ My Playlist</a>
+      <header class="topbar">
+        <a href="../index.html" class="back-btn">Back to Home</a>
+        <a href="../index.html" class="logo">Ramphony</a>
+      </header>
 
-        <div class="sidebar-bottom">
-          <a class="nav-link" href="profile.html">◉ My Profile</a>
-          <small>© Ramphony Offline Player</small>
-        </div>
-      </aside>
-
-      <main class="main">
-        <header class="topbar">
-          <a href="../index.html">← Back to Home</a>
-          <span>OFFLINE MUSIC PLAYER</span>
-        </header>
-
+      <main class="main container">
         <section id="library-view">
           <div class="page-heading">
             <div>
               <p class="eyebrow">YOUR MUSIC COLLECTION</p>
-              <h1>My Playlist<span>.</span></h1>
+              <h1>Playlist<span>.</span></h1>
               <p class="subtitle">Your music, your mood, your collection.</p>
             </div>
             <button id="create-btn" class="primary-btn" type="button">
@@ -42,7 +29,7 @@
           <div id="playlist-grid" class="playlist-grid"></div>
 
           <div id="empty-playlists" class="empty-state" hidden>
-            <div class="empty-icon">♫</div>
+            <div class="empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
             <h2>No playlists yet</h2>
             <p>Create your first playlist to get started.</p>
             <button id="empty-create" class="primary-btn" type="button">
@@ -52,12 +39,10 @@
         </section>
 
         <section id="detail-view" hidden>
-          <button id="back-playlists" class="text-btn" type="button">
-            ← All Playlists
-          </button>
+          <button id="back-playlists" class="text-btn" type="button">All Playlists</button>
 
           <div class="playlist-hero">
-            <div class="hero-art">♫</div>
+            <div class="hero-art"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
 
             <div class="hero-info">
               <p class="eyebrow">YOUR PLAYLIST</p>
@@ -140,7 +125,7 @@
     <!-- MINI PLAYER -->
     <div id="playlist-player" class="playlist-player" hidden>
       <div class="player-song">
-        <div class="player-art">♫</div>
+        <div class="player-art"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
         <div class="player-info">
           <strong id="playing-title">No song playing</strong>
           <small id="playing-playlist">Ramphony</small>
@@ -172,10 +157,10 @@
 
       <div class="player-right">
         <button id="player-lyrics" class="lyrics-btn" type="button">
-          ♫ Lyrics
+          Lyrics
         </button>
         <div class="player-volume">
-          <span>♪</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
           <input id="player-volume" type="range" min="0" max="100" value="80" />
         </div>
       </div>
@@ -242,5 +227,46 @@
         );
       })();
     </script>
+
+  <!-- OVERLAY NAVIGATION: when inside index.html iframe -->
+  <script>
+    (function () {
+      "use strict";
+
+      const isEmbedded = window.parent !== window;
+      if (!isEmbedded) return;
+
+      function sendToParent(type) {
+        window.parent.postMessage({ type: type }, window.location.origin);
+      }
+
+      document.addEventListener('click', function (event) {
+        const link = event.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href) return;
+        let url;
+        try { url = new URL(href, document.baseURI); } catch { return; }
+        if (url.origin !== location.origin) return;
+        const path = url.pathname;
+
+        /* Back to Home -> close playlist overlay */
+        if (path.endsWith('/index.html')) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          sendToParent('RAMPHONY_CLOSE_PLAYLIST');
+          return;
+        }
+
+        /* Profile link -> open profile overlay */
+        if (path.endsWith('/pages/profile.html')) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          sendToParent('RAMPHONY_OPEN_PROFILE');
+          return;
+        }
+      }, true);
+    })();
+  </script>
   </body>
 </html>
