@@ -839,10 +839,7 @@
 
     }
 
-    // Close drawer
-
-    const drawer = document.getElementById("chat-music-drawer");
-
+    // Drawer sudah ditutup di awal
     if (drawer) drawer.hidden = true;
 
     showToast(`🎵 Lagu "${trackData.name || trackData.title}" berhasil dibagikan!`);

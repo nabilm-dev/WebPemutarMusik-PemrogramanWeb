@@ -1082,21 +1082,35 @@ function toggleFavorite(track) {
   }
   saveFavorites(favs);
   updateHeartStatus();
+  updateBottomPlayer();
   render();
   renderFavorites();
   renderHistory();
+  broadcastPlayerState();
 }
 
 function updateHeartStatus() {
-  const mobileFavBtn = $("#mobile-fav");
   const track = cur >= 0 ? tracks[cur] : null;
   const favorited = track && isFavorite(track.name);
 
+  // 1. Tombol Love di Mobile Controls Home Player
+  const mobileFavBtn = $("#mobile-fav");
   if (mobileFavBtn) {
     mobileFavBtn.classList.toggle("active", Boolean(favorited));
     const path = mobileFavBtn.querySelector(".fav-heart-path");
     if (path) {
       path.setAttribute("fill", favorited ? "currentColor" : "none");
+    }
+  }
+
+  // 2. Tombol Love di Bottom Seek Player (Halaman Lain)
+  const bottomFavBtn = document.getElementById("bottom-fav");
+  if (bottomFavBtn) {
+    bottomFavBtn.classList.toggle("active", Boolean(favorited));
+    const bpHeart = bottomFavBtn.querySelector(".bp-fav-heart");
+    if (bpHeart) {
+      bpHeart.setAttribute("fill", favorited ? "#ff6b81" : "none");
+      bpHeart.setAttribute("stroke", favorited ? "#ff6b81" : "currentColor");
     }
   }
 }
@@ -1473,6 +1487,10 @@ function switchView(page) {
     // Bottom seek player is hidden on home, visible on all other pages
     if (bottomPlayer) {
       bottomPlayer.hidden = (page === "home");
+      if (page !== "home") {
+        updateBottomPlayer();
+        updateHeartStatus();
+      }
     }
 
     if (page === "tracks") render();
@@ -1615,7 +1633,13 @@ function updateBottomPlayer() {
     }
 
     if (favBtn) {
-      favBtn.classList.toggle("active", isFavorite(currentTrack.name));
+      const isFav = isFavorite(currentTrack.name);
+      favBtn.classList.toggle("active", isFav);
+      const bpHeart = favBtn.querySelector(".bp-fav-heart");
+      if (bpHeart) {
+        bpHeart.setAttribute("fill", isFav ? "#ff6b81" : "none");
+        bpHeart.setAttribute("stroke", isFav ? "#ff6b81" : "currentColor");
+      }
     }
   } else {
     if (titleEl) titleEl.textContent = "No track selected";
@@ -1634,7 +1658,9 @@ function initBottomPlayer() {
   const homeBtn = document.getElementById("bottom-go-home");
 
   favBtn?.addEventListener("click", () => {
-    toggleFav();
+    if (cur >= 0 && tracks[cur]) {
+      toggleFavorite(tracks[cur]);
+    }
     updateBottomPlayer();
   });
 
