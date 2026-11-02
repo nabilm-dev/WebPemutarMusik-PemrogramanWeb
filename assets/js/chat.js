@@ -69,6 +69,25 @@
 
   let currentSearch = "";
 
+  function showToast(msg) {
+    try {
+      let toast = document.getElementById("ramphony-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "ramphony-toast";
+        toast.className = "ramphony-toast";
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.classList.add("show");
+      if (showToast._timer) clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove("show"), 3200);
+    } catch (e) {
+      console.log("[Toast]:", msg);
+    }
+  }
+  window.showToast = showToast;
+
   try {
 
     if ("BroadcastChannel" in window) {
@@ -745,15 +764,15 @@
     try {
       let fileBlob = null;
 
-      // 1. Coba ambil dari blob URL langsung
-      if (trackData.src && trackData.src.startsWith("blob:")) {
+      // 1. Coba ambil dari blob URL atau local path langsung
+      if (trackData.src && (trackData.src.startsWith("blob:") || !trackData.src.startsWith("http"))) {
         try {
           const res = await fetch(trackData.src);
           if (res.ok) {
             fileBlob = await res.blob();
           }
         } catch (e) {
-          console.warn("fetch blob URL error, mencoba IndexedDB...", e);
+          console.warn("fetch src error, mencoba IndexedDB...", e);
         }
       }
 
@@ -809,7 +828,8 @@
         headers: {
           "apikey": SUPABASE_CONFIG.key,
           "Authorization": `Bearer ${SUPABASE_CONFIG.key}`,
-          "Content-Type": fileBlob.type || "audio/mpeg"
+          "Content-Type": fileBlob.type || "audio/mpeg",
+          "x-upsert": "true"
         },
         body: fileBlob
       });

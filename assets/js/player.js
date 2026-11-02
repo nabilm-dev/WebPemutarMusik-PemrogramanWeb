@@ -356,7 +356,8 @@ function addStoredSong(record) {
     name: record.name,
     src: URL.createObjectURL(record.file),
     tag: "Berkas",
-    localId: record.id
+    localId: record.id,
+    file: record.file
   });
 
   return true;
@@ -1290,24 +1291,28 @@ function playFromExternal(item, switchHome = false) {
   const targetName = (item.name || item.title || "").toLowerCase().trim();
   const targetClean = targetName.replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "").trim();
 
-  // 1. CARI DULU DI CACHE / LIBRARY LOKAL PERANGKAT INI
+  const isCloudAudio = item.src && (item.src.includes("supabase.co") || (item.src.startsWith("http") && !item.src.startsWith("blob:")));
+
+  // 1. CARI DI ANTRIAN LOKAL PERANGKAT
   let existingIdx = tracks.findIndex(t => {
     const tName = (t.name || t.title || "").toLowerCase().trim();
     const tClean = tName.replace(/\.(mp3|m4a|wav|ogg|flac|aac)$/i, "").trim();
-    return tName === targetName || tClean === targetClean || tName.includes(targetClean) || targetClean.includes(tClean);
+    return tName === targetName || tClean === targetClean;
   });
 
   let targetIdx;
 
   if (existingIdx >= 0) {
-    // LAGU ADA DI CACHE PERANGKAT INI: PAKAI FILE AUDIO LOKAL KITA SENDIRI!
-    // JANGAN PERNAH MENIMPA src LOKAL KITA DENGAN URL DARI PERANGKAT LAIN!
+    // Jika lagu yang ada di antrean lokal cuma demo lagu, tapi pesan membawa file Cloud MP3 asli:
+    if (isCloudAudio && (!tracks[existingIdx].src || tracks[existingIdx].src.includes("demolagu/"))) {
+      tracks[existingIdx].src = item.src;
+      tracks[existingIdx].tag = "Cloud MP3";
+    }
     targetIdx = existingIdx;
-    console.log("Memutar lagu dari cache lokal perangkat:", tracks[existingIdx].name);
+    console.log("Memutar lagu dari antrean:", tracks[existingIdx].name, "src:", tracks[existingIdx].src);
   } else {
-    // Lagu belum ada di antrean: buat entri baru
     let safeSrc = item.src || "";
-    // Jika src adalah blob URL dari host/perangkat lain yang tidak bisa diakses
+    // Jika src adalah blob URL dari perangkat lain yang tidak bisa diakses
     if (safeSrc.startsWith("blob:") && !safeSrc.includes(location.host)) {
       safeSrc = encodeURI("demolagu/Rex Orange County - Best Friend.mp3");
     }
@@ -1317,7 +1322,7 @@ function playFromExternal(item, switchHome = false) {
       title: item.title || item.name,
       artist: item.artist || "",
       src: safeSrc,
-      tag: item.tag || "Shared Track",
+      tag: isCloudAudio ? "Cloud MP3" : (item.tag || "Shared Track"),
       artwork: item.artwork || null,
       videoId: item.videoId || null,
       isYouTube: item.isYouTube !== undefined ? item.isYouTube : Boolean(item.videoId || !safeSrc),
