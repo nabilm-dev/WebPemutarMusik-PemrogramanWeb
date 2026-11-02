@@ -262,23 +262,21 @@
 
   function getCurrentUser() {
 
+    let user = null;
+
     try {
 
       const s = localStorage.getItem(SESSION_USER_KEY);
 
       if (s) {
 
-        const u = JSON.parse(s);
-
-        if (u && (u.username || u.displayName)) return u;
+        user = JSON.parse(s);
 
       }
 
     } catch (e) {}
 
 
-
-    // Check local profile as fallback
 
     try {
 
@@ -288,19 +286,19 @@
 
         const prof = JSON.parse(p);
 
-        if (prof && (prof.displayName || prof.username || prof.avatar)) {
+        if (prof) {
 
-          return {
+          if (!user) user = {};
 
-            displayName: prof.displayName || prof.username || "Guest",
+          if (prof.displayName) user.displayName = prof.displayName;
 
-            username: (prof.username || "guest").toLowerCase(),
+          if (prof.username) user.username = String(prof.username).toLowerCase().trim();
 
-            avatar: prof.avatar || "",
+          if (prof.avatar) user.avatar = prof.avatar;
 
-            isProfileOnly: true
+          if (prof.bio) user.bio = prof.bio;
 
-          };
+          if (prof.favoriteArtist) user.favoriteArtist = prof.favoriteArtist;
 
         }
 
@@ -309,6 +307,8 @@
     } catch (e) {}
 
 
+
+    if (user && (user.username || user.displayName || user.email)) return user;
 
     return null;
 
@@ -962,6 +962,18 @@
 
         topbarProfileBtn.style.display = "flex";
 
+        if (user.avatar) {
+
+          topbarProfileBtn.innerHTML = `<img src="${user.avatar}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--green,#b5e4bf);box-sizing:border-box;">`;
+
+        } else {
+
+          const init = (user.displayName || user.username || "R").charAt(0).toUpperCase();
+
+          topbarProfileBtn.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:#27402f;border:2px solid var(--green,#b5e4bf);color:var(--green,#b5e4bf);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;box-sizing:border-box;">${init}</div>`;
+
+        }
+
       }
 
 
@@ -1157,6 +1169,50 @@
     if (data && data.type === "RAMPHONY_TRIGGER_LOGOUT") {
 
       logoutAccount();
+
+    }
+
+    if (data && data.type === "RAMPHONY_DELETE_CURRENT_ACCOUNT") {
+
+      const targetUser = data.user || getCurrentUser();
+
+      if (window.firebase && window.firebase.firestore && targetUser) {
+
+        const docId = targetUser.uid || (targetUser.email ? targetUser.email.replace(/[^a-zA-Z0-9]/g, "_") : targetUser.username);
+
+        window.firebase.firestore().collection("users").doc(docId).delete().catch(() => {});
+
+      }
+
+      if (window.firebase && window.firebase.auth && window.firebase.auth().currentUser) {
+
+        window.firebase.auth().currentUser.delete().catch(() => {});
+
+      }
+
+      logoutAccount();
+
+      showToast("Akun kamu telah berhasil dihapus secara permanen.");
+
+    }
+
+    if (data && data.type === "RAMPHONY_PROFILE_UPDATED") {
+
+      const u = getCurrentUser();
+
+      if (u) {
+
+        updateUI();
+
+        if (window.firebase && window.firebase.firestore && (u.uid || u.email)) {
+
+          const docId = u.uid || (u.email ? u.email.replace(/[^a-zA-Z0-9]/g, "_") : u.username);
+
+          window.firebase.firestore().collection("users").doc(docId).set(u, { merge: true }).catch(() => {});
+
+        }
+
+      }
 
     }
 

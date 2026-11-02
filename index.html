@@ -353,7 +353,7 @@
       }
     </style>
     <link rel="stylesheet" href="assets/css/auth.css?v=2.6" />
-    <link rel="stylesheet" href="assets/css/chat.css?v=3.5" />
+    <link rel="stylesheet" href="assets/css/chat.css?v=4.0" />
 
     <!-- MOBILE CHAT FULLSCREEN STYLES (INLINE TO PREVENT BROWSER CACHE) -->
     <style id="chat-mobile-responsive-styles">
@@ -1414,15 +1414,15 @@
           }
         }
 
-        function openProfile() {
+        function openProfile(targetUser) {
           closeMasterMenu();
-          if (!profileLoaded || !profileFrame.src || profileFrame.src.endsWith("about:blank")) {
-            profileFrame.src = "pages/profile.html";
-            profileLoaded = true;
-          }
+          const targetSrc = targetUser ? `pages/profile.html?user=${encodeURIComponent(targetUser)}` : "pages/profile.html";
+          profileFrame.src = targetSrc;
+          profileLoaded = true;
           openOverlay(profileOverlay);
           updateNavActive("profile");
         }
+        window.openUserProfile = openProfile;
 
         function openPlaylist() {
           closeMasterMenu();
@@ -1494,6 +1494,17 @@
 
           if (data.type === "RAMPHONY_CLOSE_PROFILE") {
             closeOverlay(profileOverlay);
+          }
+
+          if (data.type === "RAMPHONY_OPEN_USER_PROFILE" && data.username) {
+            openProfile(data.username);
+          }
+
+          if (data.type === "RAMPHONY_OPEN_CONVO" && data.username) {
+            closeOverlay(profileOverlay);
+            if (typeof window.openChatWithUser === "function") {
+              window.openChatWithUser(data.username);
+            }
           }
 
           if (data.type === "RAMPHONY_TRIGGER_LOGOUT") {
@@ -1684,8 +1695,17 @@
               <h2 id="chat-inbox-my-name" class="chat-user-headline">User</h2>
             </div>
             <div class="chat-inbox-actions">
-              <button id="chat-inbox-refresh" class="chat-round-btn" type="button" title="Segarkan Kontak">🔄</button>
-              <button id="chat-inbox-close" class="chat-round-btn" type="button" title="Tutup Chat">✕</button>
+              <button id="chat-inbox-refresh" class="chat-round-btn chat-refresh-btn" type="button" title="Segarkan Kontak & Profil">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </button>
+              <button id="chat-inbox-close" class="chat-round-btn chat-close-btn" type="button" title="Tutup Chat">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
           </header>
 
@@ -1729,7 +1749,12 @@
                 <span id="chat-convo-status" class="chat-convo-status">Online</span>
               </div>
             </div>
-            <button id="chat-convo-close" class="chat-round-btn" type="button" title="Tutup Chat">✕</button>
+            <button id="chat-convo-close" class="chat-round-btn chat-close-btn" type="button" title="Tutup Chat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </header>
 
           <!-- MESSAGES LIST -->
@@ -1827,6 +1852,8 @@
 
             <div class="cps-actions">
               <button type="button" id="cps-chat-btn" class="cps-chat-btn">💬 Kirim Pesan</button>
+              <button type="button" id="cps-full-profile-btn" class="cps-full-profile-btn" title="Buka Halaman Profil Lengkap">🔍 Profil Lengkap</button>
+              <button type="button" id="cps-delete-btn" class="cps-delete-btn" title="Hapus akun tester ini dari kontak & database">🗑️ Hapus Kontak</button>
             </div>
           </div>
         </div>
@@ -1839,8 +1866,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <!-- AUTH & CHAT LOGIC -->
-    <script src="assets/js/auth.js?v=3.2"></script>
-    <script src="assets/js/chat.js?v=4.1"></script>
+    <script src="assets/js/auth.js?v=3.5"></script>
+    <script src="assets/js/chat.js?v=4.7"></script>
 
   </body>
 </html>

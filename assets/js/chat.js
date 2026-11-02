@@ -87,6 +87,45 @@
     }
   }
   window.showToast = showToast;
+  window.openChatWithUser = function(uname) {
+    openChat();
+    if (uname) {
+      setTimeout(() => openConversation(uname), 80);
+    }
+  };
+
+
+  // Global helper to clean all test accounts from Firestore database
+  window.clearAllTesterAccounts = async function() {
+    if (!firestoreDb && window.firebase && window.firebase.firestore) {
+      firestoreDb = window.firebase.firestore();
+    }
+    const me = getCurrentUser();
+    let count = 0;
+    if (firestoreDb) {
+      try {
+        const snap = await firestoreDb.collection("users").get();
+        for (const doc of snap.docs) {
+          const d = doc.data();
+          const isMe = (me.uid && (doc.id === me.uid || d.uid === me.uid)) ||
+                       (me.email && d.email && d.email.toLowerCase() === me.email.toLowerCase()) ||
+                       (me.username && d.username && d.username.toLowerCase() === me.username.toLowerCase());
+          if (!isMe) {
+            await firestoreDb.collection("users").doc(doc.id).delete();
+            count++;
+          }
+        }
+      } catch (err) {
+        console.warn("Gagal menghapus dari firestore:", err);
+      }
+    }
+    // Clean local cache
+    localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(me.username ? [me] : []));
+    localStorage.removeItem(THREADS_KEY);
+    alert(`Selesai! ${count} akun tester berhasil dihapus dari Cloud Firestore & memori lokal. Halaman akan dimuat ulang.`);
+    location.reload();
+  };
+
 
   try {
 
@@ -552,12 +591,32 @@
     if (nameEl) nameEl.textContent = displayName;
     if (unameEl) unameEl.textContent = `@${username}`;
 
-    if (avatarEl) {
-      if (target.avatar && (target.avatar.startsWith("data:") || target.avatar.startsWith("http"))) {
-        avatarEl.innerHTML = `<img src="${target.avatar}" alt="${escapeHtml(displayName)}" class="chat-item-avatar-img">`;
+    function renderSheetAvatar(src, name) {
+      if (!avatarEl) return;
+      if (src && (src.startsWith("data:") || src.startsWith("http"))) {
+        avatarEl.innerHTML = `<img src="${src}" alt="${escapeHtml(name || displayName)}" class="chat-item-avatar-img">`;
       } else {
-        avatarEl.textContent = displayName.charAt(0).toUpperCase();
+        avatarEl.textContent = (name || displayName || "?").charAt(0).toUpperCase();
       }
+    }
+
+    renderSheetAvatar(target.avatar, displayName);
+
+    // Live sync from Firestore: immediately grab the latest uploaded photo from the other user!
+    if (firestoreDb && username) {
+      firestoreDb.collection("users").get().then(snap => {
+        snap.forEach(doc => {
+          const d = doc.data();
+          if (d && d.username && d.username.toLowerCase() === username.toLowerCase()) {
+            if (d.avatar) {
+              renderSheetAvatar(d.avatar, d.displayName || displayName);
+            }
+            if (d.bio && bioEl) bioEl.textContent = d.bio;
+            if (d.favoriteArtist && artistEl) artistEl.textContent = d.favoriteArtist;
+            if (d.displayName && nameEl) nameEl.textContent = d.displayName;
+          }
+        });
+      }).catch(() => {});
     }
 
     if (onlineDot) {
@@ -594,6 +653,66 @@
         chatBtn.onclick = () => {
           sheet.hidden = true;
           openConversation(username);
+        };
+      }
+    }
+
+        const fullProfileBtn = document.getElementById("cps-full-profile-btn");
+    if (fullProfileBtn) {
+      fullProfileBtn.onclick = () => {
+        sheet.hidden = true;
+        closeChat();
+        if (typeof window.openUserProfile === "function") {
+          window.openUserProfile(username);
+        }
+      };
+    }
+
+    const deleteContactBtn = document.getElementById("cps-delete-btn");
+    if (deleteContactBtn) {
+      if (me && me.username && me.username.toLowerCase() === username.toLowerCase()) {
+        deleteContactBtn.hidden = true;
+      } else {
+        deleteContactBtn.hidden = false;
+        deleteContactBtn.onclick = () => {
+          if (!confirm(`Hapus kontak / akun tester "${displayName} (@${username})" dari daftar chat dan Firestore?`)) return;
+
+          // 1. Delete user from Firestore so it disappears from all devices
+          if (firestoreDb) {
+            firestoreDb.collection("users").get().then(snap => {
+              snap.forEach(doc => {
+                const d = doc.data();
+                if (d && (
+                  (d.username && d.username.toLowerCase() === username.toLowerCase()) ||
+                  (target.uid && doc.id === target.uid) ||
+                  (d.email && target.email && d.email.toLowerCase() === target.email.toLowerCase())
+                )) {
+                  firestoreDb.collection("users").doc(doc.id).delete().catch(err => {
+                    console.warn("Firestore delete user error:", err);
+                  });
+                }
+              });
+            }).catch(() => {});
+          }
+
+          // 2. Remove user from local registered cache
+          try {
+            const regList = getRegisteredUsers();
+            const filtered = regList.filter(u => u && u.username && u.username.toLowerCase() !== username.toLowerCase());
+            localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(filtered));
+          } catch (e) {}
+
+          // 3. Remove thread messages with this user
+          try {
+            const allT = getAllThreads();
+            const threadKey = getThreadKey(me.username, username);
+            delete allT[threadKey];
+            localStorage.setItem(THREADS_KEY, JSON.stringify(allT));
+          } catch (e) {}
+
+          hideUserProfile();
+          renderInbox();
+          showToast(`🗑️ Akun @${username} berhasil dihapus dari kontak!`);
         };
       }
     }
@@ -1505,6 +1624,21 @@
     updateGreeting();
     renderInbox();
 
+    // Fetch latest users & avatars from Firestore immediately on open
+    if (firestoreDb) {
+      firestoreDb.collection("users").get().then(snap => {
+        const remoteUsers = [];
+        snap.forEach(doc => {
+          const u = doc.data();
+          if (u && (u.uid || u.email || u.username)) remoteUsers.push(u);
+        });
+        if (remoteUsers.length > 0) {
+          localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(remoteUsers));
+          renderInbox();
+        }
+      }).catch(() => {});
+    }
+
     // Publish current user to Firestore so other devices see us immediately
 
     try {
@@ -1568,6 +1702,30 @@
       }
 
       firestoreDb = window.firebase.firestore();
+
+      // Realtime users & avatar listener: sync new profile photos across devices immediately
+      firestoreDb
+        .collection("users")
+        .onSnapshot(snap => {
+          const remoteUsers = [];
+          snap.forEach(doc => {
+            const u = doc.data();
+            if (u && (u.uid || u.email || u.username)) remoteUsers.push(u);
+          });
+          if (remoteUsers.length > 0) {
+            localStorage.setItem(REGISTERED_DB_KEY, JSON.stringify(remoteUsers));
+            renderInbox();
+            if (activeRecipientUsername) {
+              const activeUser = remoteUsers.find(u => u.username && u.username.toLowerCase() === activeRecipientUsername.toLowerCase());
+              if (activeUser && activeUser.avatar) {
+                const headerAvatar = document.getElementById("chat-convo-avatar");
+                if (headerAvatar) {
+                  headerAvatar.innerHTML = `<img src="${activeUser.avatar}" alt="Avatar" class="chat-item-avatar-img">`;
+                }
+              }
+            }
+          }
+        }, err => console.warn("Realtime users listener warning:", err));
 
       firestoreDb
 
@@ -1881,9 +2039,10 @@
 
       const btn = document.getElementById("chat-inbox-refresh");
 
-      if (btn) btn.style.transform = "rotate(360deg)";
-
-      setTimeout(() => { if (btn) btn.style.transform = "none"; }, 400);
+      if (btn) {
+        btn.classList.add("spinning");
+        setTimeout(() => btn.classList.remove("spinning"), 700);
+      }
 
       const me = getCurrentUser();
 

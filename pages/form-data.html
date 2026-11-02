@@ -491,14 +491,20 @@
 
       function loadProfile() {
         try {
+          let profile = {};
+          const uStr = localStorage.getItem("ramphony_user");
+          if (uStr) {
+            try { profile = { ...JSON.parse(uStr) }; } catch (e) {}
+          }
           const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            try { profile = { ...profile, ...JSON.parse(saved) }; } catch (e) {}
+          }
 
-          if (!saved) {
+          if (!profile.username && !profile.displayName && !profile.avatar) {
             updateBioCounter();
             return;
           }
-
-          const profile = JSON.parse(saved);
 
           username.value = profile.username || "";
           displayName.value = profile.displayName || "";

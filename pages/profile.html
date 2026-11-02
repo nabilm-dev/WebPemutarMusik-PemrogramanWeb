@@ -43,11 +43,17 @@
               <strong id="artist">Not set yet</strong>
             </span>
 
-            <a href="form-data.html" class="edit-btn">
+            <a href="form-data.html" id="edit-profile-btn" class="edit-btn">
               ✎ Edit Profile
             </a>
             <button type="button" id="auth-action-btn" class="edit-btn" style="cursor: pointer; background: rgba(235, 87, 87, 0.12); color: #ff8585; border: 1px solid rgba(235, 87, 87, 0.3);">
               Keluar (Logout)
+            </button>
+            <button type="button" id="delete-my-account-btn" class="edit-btn" style="cursor: pointer; background: rgba(235, 87, 87, 0.22); color: #ff4d4d; border: 1px solid rgba(235, 87, 87, 0.45); display: none;">
+              🗑️ Hapus Akun Saya
+            </button>
+            <button type="button" id="public-chat-btn" class="edit-btn" style="cursor: pointer; background: var(--green, #b5e4bf); color: #071b12; font-weight: 700; border: none; display: none;">
+              💬 Kirim Pesan
             </button>
           </div>
         </div>
@@ -134,10 +140,69 @@
 
       function loadProfile() {
         try {
-          const saved = localStorage.getItem(PROFILE_KEY);
-          if (!saved) return;
+          const params = new URLSearchParams(window.location.search);
+          const targetUname = params.get("user") || params.get("u");
+          const myUser = JSON.parse(localStorage.getItem("ramphony_user") || "null");
+          const isOther = targetUname && (!myUser || targetUname.toLowerCase() !== String(myUser.username || "").toLowerCase());
 
-          const profile = JSON.parse(saved);
+          let profile = {};
+
+          if (isOther) {
+            // Viewing another user's profile
+            const regList = JSON.parse(localStorage.getItem("ramphony_registered_accounts") || "[]");
+            const found = regList.find(x => x && x.username && x.username.toLowerCase() === targetUname.toLowerCase());
+            if (found) {
+              profile = { ...found };
+            } else {
+              profile = {
+                username: targetUname,
+                displayName: targetUname,
+                bio: "Pengguna Ramphony Music.",
+                favoriteArtist: "Belum disetel"
+              };
+            }
+
+            // Adjust UI for other user's profile
+            document.title = `${profile.displayName || profile.username} - Profil Ramphony`;
+            const editBtn = document.getElementById("edit-profile-btn");
+            const authBtn = document.getElementById("auth-action-btn");
+            const delBtn = document.getElementById("delete-my-account-btn");
+            const chatBtn = document.getElementById("public-chat-btn");
+            const avatarOverlay = document.querySelector(".avatar-overlay");
+
+            if (editBtn) editBtn.style.display = "none";
+            if (authBtn) authBtn.style.display = "none";
+            if (delBtn) delBtn.style.display = "none";
+            if (avatarOverlay) avatarOverlay.style.display = "none";
+
+            if (chatBtn) {
+              chatBtn.style.display = "inline-flex";
+              chatBtn.onclick = () => {
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({ type: "RAMPHONY_CLOSE_PROFILE" }, "*");
+                  window.parent.postMessage({ type: "RAMPHONY_OPEN_CONVO", username: profile.username }, "*");
+                }
+              };
+            }
+          } else {
+            // Viewing own profile
+            const uStr = localStorage.getItem("ramphony_user");
+            if (uStr) {
+              try { profile = { ...JSON.parse(uStr) }; } catch (e) {}
+            }
+            const saved = localStorage.getItem(PROFILE_KEY);
+            if (saved) {
+              try { profile = { ...profile, ...JSON.parse(saved) }; } catch (e) {}
+            }
+            if (!profile.username && !profile.displayName && !profile.avatar) return;
+
+            const editBtn = document.getElementById("edit-profile-btn");
+            if (editBtn) editBtn.style.display = "inline-flex";
+            const chatBtn = document.getElementById("public-chat-btn");
+            if (chatBtn) chatBtn.style.display = "none";
+            const avatarOverlay = document.querySelector(".avatar-overlay");
+            if (avatarOverlay) avatarOverlay.style.display = "flex";
+          }
 
           const name =
             profile.displayName ||
@@ -174,7 +239,30 @@
 
           // Auth Action Button state (Login vs Logout)
           const authBtn = document.getElementById("auth-action-btn");
+          const delMyAccBtn = document.getElementById("delete-my-account-btn");
           const user = JSON.parse(localStorage.getItem("ramphony_user") || "null");
+
+          if (delMyAccBtn) {
+            if (user) {
+              delMyAccBtn.style.display = "inline-flex";
+              delMyAccBtn.onclick = () => {
+                if (!confirm("⚠️ PERINGATAN: Apakah kamu yakin ingin menghapus akun ini secara permanen? Akun kamu akan dihapus dari database dan kamu akan langsung keluar.")) return;
+
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({ type: "RAMPHONY_DELETE_CURRENT_ACCOUNT", user }, "*");
+                  window.parent.postMessage({ type: "RAMPHONY_CLOSE_PROFILE" }, "*");
+                } else {
+                  localStorage.removeItem("ramphony_user");
+                  localStorage.removeItem("ramphony_profile");
+                  localStorage.removeItem("ramphony_registered_accounts");
+                  window.location.href = "../index.html";
+                }
+              };
+            } else {
+              delMyAccBtn.style.display = "none";
+            }
+          }
+
           if (authBtn) {
             if (user) {
               authBtn.textContent = "Keluar (Logout)";
@@ -231,6 +319,8 @@
       const avatarBtn = document.getElementById("avatar");
 
       avatarBtn?.addEventListener("click", () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("user") || params.get("u")) return; // Cannot edit others' photos
         directAvatarInput?.click();
       });
 
@@ -240,16 +330,38 @@
         processImageFile(file, dataUrl => {
           try {
             const saved = localStorage.getItem(PROFILE_KEY);
+            const userStr = localStorage.getItem("ramphony_user");
+            const uObj = userStr ? JSON.parse(userStr) : {};
             const profile = saved ? JSON.parse(saved) : {};
             profile.avatar = dataUrl;
+            if (!profile.username && uObj.username) profile.username = uObj.username;
+            if (!profile.displayName && uObj.displayName) profile.displayName = uObj.displayName;
+            if (!profile.email && uObj.email) profile.email = uObj.email;
             localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+
+            uObj.avatar = dataUrl;
+            localStorage.setItem("ramphony_user", JSON.stringify(uObj));
+
+            // Sync with ramphony_registered_accounts so friends see the new avatar
             try {
-              const u = localStorage.getItem("ramphony_user");
-              if (u) {
-                const uObj = JSON.parse(u);
-                uObj.avatar = dataUrl;
-                localStorage.setItem("ramphony_user", JSON.stringify(uObj));
+              const regStr = localStorage.getItem("ramphony_registered_accounts");
+              if (regStr) {
+                const regList = JSON.parse(regStr);
+                if (Array.isArray(regList)) {
+                  regList.forEach(item => {
+                    if (item && (
+                      (profile.username && String(item.username).toLowerCase() === String(profile.username).toLowerCase()) ||
+                      (profile.email && item.email === profile.email)
+                    )) {
+                      item.avatar = dataUrl;
+                    }
+                  });
+                  localStorage.setItem("ramphony_registered_accounts", JSON.stringify(regList));
+                }
               }
+            } catch (e) {}
+
+            try {
               window.parent.postMessage({ type: "RAMPHONY_PROFILE_UPDATED", profile }, "*");
             } catch (e) {}
             loadProfile();
