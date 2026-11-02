@@ -80,6 +80,15 @@
             };
             saveRegisteredAccount(mapped);
             saveSession(mapped);
+
+            // Always sync active user to Firestore
+            try {
+              if (window.firebase && window.firebase.firestore) {
+                window.firebase.firestore().collection("users").doc(user.uid).set(mapped, { merge: true }).catch(err => {
+                  console.warn("Firestore sync hint: Pastikan Cloud Firestore sudah dibuat di Firebase Console! Error:", err);
+                });
+              }
+            } catch (e) {}
           } else {
             const cur = getCurrentUser();
             if (cur && (cur.provider === "firebase" || cur.provider === "google")) {

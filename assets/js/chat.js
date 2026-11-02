@@ -714,6 +714,16 @@
     modal.hidden = false;
     document.body.classList.add("modal-open");
 
+    // Publish current user to Firestore so other devices see us immediately
+    try {
+      const me = getCurrentUser();
+      if (firestoreDb && me && me.uid) {
+        firestoreDb.collection("users").doc(me.uid).set(me, { merge: true }).catch(err => {
+          console.warn("Firestore collection('users') write hint:", err);
+        });
+      }
+    } catch (e) {}
+
     // Refresh data and open inbox
     if (!activeRecipientUsername) {
       backToInbox();
