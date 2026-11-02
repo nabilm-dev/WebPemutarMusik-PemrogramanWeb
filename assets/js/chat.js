@@ -727,6 +727,108 @@
 
      ======================================================== */
 
+  /* ========================================================
+     SUPABASE CLOUD AUDIO UPLOAD (REAL MP3 SHARING)
+     ======================================================== */
+  async function uploadTrackToSupabase(trackData) {
+    if (!trackData) return null;
+
+    // Jika sudah berupa URL online
+    if (
+      trackData.src &&
+      (trackData.src.startsWith("http://") || trackData.src.startsWith("https://")) &&
+      !trackData.src.startsWith("blob:")
+    ) {
+      return trackData.src;
+    }
+
+    try {
+      let fileBlob = null;
+
+      // 1. Coba ambil dari blob URL langsung
+      if (trackData.src && trackData.src.startsWith("blob:")) {
+        try {
+          const res = await fetch(trackData.src);
+          if (res.ok) {
+            fileBlob = await res.blob();
+          }
+        } catch (e) {
+          console.warn("fetch blob URL error, mencoba IndexedDB...", e);
+        }
+      }
+
+      // 2. Coba dari trackData.file jika ada
+      if (!fileBlob && trackData.file instanceof Blob) {
+        fileBlob = trackData.file;
+      }
+
+      // 3. Fallback: cari file asli di IndexedDB (ramphony-music-v1)
+      if (!fileBlob && typeof indexedDB !== "undefined") {
+        try {
+          fileBlob = await new Promise((resolve) => {
+            const req = indexedDB.open("ramphony-music-v1", 1);
+            req.onsuccess = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains("songs")) return resolve(null);
+              const tx = db.transaction("songs", "readonly");
+              const store = tx.objectStore("songs");
+              const allReq = store.getAll();
+              allReq.onsuccess = () => {
+                const songs = allReq.result || [];
+                const tName = (trackData.name || trackData.title || "").toLowerCase().trim();
+                const match = songs.find(s => {
+                  const sName = (s.name || "").toLowerCase().trim();
+                  return sName === tName || (trackData.localId && s.id === trackData.localId) || sName.includes(tName) || tName.includes(sName);
+                });
+                resolve(match ? match.file : null);
+              };
+              allReq.onerror = () => resolve(null);
+            };
+            req.onerror = () => resolve(null);
+          });
+        } catch (e) {
+          console.warn("IndexedDB read error:", e);
+        }
+      }
+
+      if (!fileBlob || fileBlob.size === 0) {
+        console.warn("Tidak ada file audio yang bisa diunggah.");
+        return null;
+      }
+
+      const rawTitle = trackData.title || trackData.name || "track";
+      const cleanTitle = rawTitle.replace(/[^a-zA-Z0-9_\-]/g, "_").toLowerCase().slice(0, 35);
+      const fileName = `audio_${Date.now()}_${cleanTitle}.mp3`;
+
+      const uploadUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/${SUPABASE_CONFIG.bucket}/${encodeURIComponent(fileName)}`;
+
+      console.log("Mengunggah audio ke Supabase Storage:", fileName, "Ukuran:", fileBlob.size);
+
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_CONFIG.key,
+          "Authorization": `Bearer ${SUPABASE_CONFIG.key}`,
+          "Content-Type": fileBlob.type || "audio/mpeg"
+        },
+        body: fileBlob
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn("Supabase upload error:", res.status, errText);
+        return null;
+      }
+
+      const publicUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/public/${SUPABASE_CONFIG.bucket}/${encodeURIComponent(fileName)}`;
+      console.log("Upload berhasil! Public URL:", publicUrl);
+      return publicUrl;
+    } catch (err) {
+      console.warn("Error uploading to Supabase:", err);
+      return null;
+    }
+  }
+
   async function sendSongMessage(trackData) {
     if (!trackData || !activeRecipientUsername) return;
     const me = getCurrentUser();
@@ -737,7 +839,8 @@
 
     let finalSrc = trackData.src || "";
     // Jika lagu berasal dari file lokal (blob URL), unggah otomatis ke Supabase Storage!
-    if (finalSrc.startsWith("blob:") || trackData.file) {
+    const isCloudUrl = finalSrc.includes("supabase.co") || (finalSrc.startsWith("http") && !finalSrc.startsWith("blob:"));
+    if (!isCloudUrl) {
       showToast("⏳ Mengunggah audio ke Cloud Storage...");
       const cloudUrl = await uploadTrackToSupabase(trackData);
       if (cloudUrl) {
