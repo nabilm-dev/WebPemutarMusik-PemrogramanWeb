@@ -9,11 +9,14 @@
   background: rgba(7, 10, 8, 0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  z-index: 1000;
+  z-index: 10008;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 16px max(30px, env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
   opacity: 1;
   visibility: visible;
   transition: opacity 0.25s ease, visibility 0.25s ease;
@@ -29,13 +32,13 @@
 .auth-modal-card {
   width: 100%;
   max-width: 440px;
+  margin: auto 0;
   background: rgba(22, 28, 24, 0.95);
   border: 1px solid rgba(181, 228, 191, 0.25);
   border-radius: 24px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(181, 228, 191, 0.08);
-  padding: 32px 30px 28px;
+  padding: 32px 28px 24px;
   position: relative;
-  overflow: hidden;
   box-sizing: border-box;
   animation: authSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -634,4 +637,25 @@
 .profile-button[hidden],
 .topbar-auth-pill[hidden] {
   display: none !important;
+}
+
+@media (max-width: 480px) {
+  .auth-modal-overlay {
+    padding: 16px 12px 36px 12px !important;
+  }
+  .auth-modal-card {
+    padding: 24px 18px 20px 18px !important;
+    border-radius: 20px !important;
+    margin: 8px 0 24px 0 !important;
+  }
+  .auth-close-btn {
+    top: 14px !important;
+    right: 14px !important;
+  }
+  .auth-brand {
+    font-size: 18px !important;
+  }
+  .auth-field {
+    margin-bottom: 12px !important;
+  }
 }

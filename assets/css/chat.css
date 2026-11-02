@@ -649,13 +649,94 @@
 }
 
 /* ========================================================
-   RESPONSIVE DESIGN (MOBILE ADAPTATION)
+   RESPONSIVE DESIGN (MOBILE FULLSCREEN ADAPTATION)
    ======================================================== */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  .chat-modal-overlay {
+    padding: 0 !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+  }
+
   .chat-phone-frame {
-    width: 100vw;
-    height: 94vh;
-    border-radius: 26px;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+
+  .chat-inbox-header {
+    padding: max(14px, env(safe-area-inset-top, 0px)) 16px 12px 16px !important;
+  }
+
+  .chat-convo-header {
+    padding: max(12px, env(safe-area-inset-top, 0px)) 14px 10px 14px !important;
+    min-height: 56px !important;
+    box-sizing: border-box !important;
+  }
+
+  .chat-convo-header-left {
+    gap: 10px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .chat-back-btn {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chat-convo-avatar {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .chat-convo-meta {
+    min-width: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-convo-meta h3 {
+    font-size: 14px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .chat-convo-status {
+    font-size: 11px !important;
+  }
+
+  .chat-messages-scroll {
+    padding: 12px 14px !important;
+  }
+
+  .chat-convo-bottom {
+    padding: 8px 12px max(12px, env(safe-area-inset-bottom, 0px)) 12px !important;
+    background: #0d150f !important;
+    border-top: 1px solid rgba(181, 228, 191, 0.14) !important;
+  }
+
+  .chat-input-pill {
+    padding: 4px 6px 4px 14px !important;
+    gap: 8px !important;
+  }
+
+  .chat-input-field {
+    font-size: 14px !important;
+  }
+
+  .chat-send-btn {
+    width: 36px !important;
+    height: 36px !important;
   }
 }
 
